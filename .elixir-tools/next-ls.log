@@ -1,0 +1,335 @@
+
+10:36:41.454 [info] Loading 137 CA(s) from :otp store
+
+10:36:41.596 id=0 [debug] handled request client -> server initialize in 99ms
+
+10:36:41.603 [debug] sent notification server -> client window/logMessage
+
+10:36:41.609 [debug] NextLS v0.22.8 has initialized!
+
+10:36:41.609 [debug] sent notification server -> client window/logMessage
+
+10:36:41.609 [debug] Log file located at /home/twajjo/code/box_turtle/.elixir-tools/next-ls.log
+
+10:36:41.611 [debug] sent notification server -> client window/logMessage
+
+10:36:41.611 id=132 [debug] sent request server -> client client/registerCapability
+
+10:36:41.611 [info] [extension] Credo initializing with options %NextLS.InitOpts.Extensions.Credo{enable: true, cli_options: []}
+
+10:36:41.994 [debug] sent notification server -> client window/logMessage
+
+10:36:41.994 [warning] Failed to unzip and install the bundled Elixir archive.
+
+** (MatchError) no match of right hand side value: {"", 126}
+    (next_ls 0.22.8) lib/next_ls/runtime/bundled_elixir.ex:49: NextLS.Runtime.BundledElixir.install/2
+    (next_ls 0.22.8) lib/next_ls.ex:902: NextLS.handle_notification/2
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:478: anonymous fn/2 in GenLSP.loop/3
+    (telemetry 1.2.1) /Users/runner/work/next-ls/next-ls/deps/telemetry/src/telemetry.erl:321: :telemetry.span/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:474: anonymous fn/7 in GenLSP.loop/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:553: GenLSP.attempt/4
+    (stdlib 5.2) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+
+
+10:36:41.994 [debug] sent notification server -> client window/logMessage
+
+10:36:41.994 [debug] Booting runtimes...
+
+10:36:42.028 [error] ** (FunctionClauseError) no function clause matching in IO.chardata_to_string/1
+    (elixir 1.17.0-dev) lib/io.ex:695: IO.chardata_to_string(nil)
+    (elixir 1.17.0-dev) lib/path.ex:554: Path.dirname/1
+    (next_ls 0.22.8) lib/next_ls.ex:916: NextLS.handle_notification/2
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:478: anonymous fn/2 in GenLSP.loop/3
+    (telemetry 1.2.1) /Users/runner/work/next-ls/next-ls/deps/telemetry/src/telemetry.erl:321: :telemetry.span/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:474: anonymous fn/7 in GenLSP.loop/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:553: GenLSP.attempt/4
+    (stdlib 5.2) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+
+10:36:42.028 [debug] sent notification server -> client window/logMessage
+
+10:36:42.031 [debug] handled notification client -> server textDocument/didOpen in 3ms
+
+10:36:42.048 id=1 [debug] handled request client -> server textDocument/documentSymbol in 17ms
+
+10:36:42.071 id=2 [debug] handled request client -> server textDocument/codeAction in 22ms
+
+10:36:42.076 id=3 [debug] handled request client -> server textDocument/documentSymbol in 4ms
+
+10:37:20.767 [debug] handled notification client -> server textDocument/didOpen in 536µs
+
+10:37:20.767 id=4 [debug] handled request client -> server textDocument/codeAction in 619µs
+
+10:37:20.768 id=5 [debug] handled request client -> server textDocument/documentSymbol in 710µs
+
+10:37:20.961 id=6 [debug] handled request client -> server textDocument/documentSymbol in 837µs
+
+10:37:21.529 id=7 [debug] handled request client -> server textDocument/codeAction in 256µs
+
+10:37:28.420 id=8 [debug] handled request client -> server textDocument/hover in 1011ms
+
+10:37:28.422 [debug] handled notification client -> server $/cancelRequest in 1ms
+
+10:37:29.423 id=9 [debug] handled request client -> server textDocument/hover in 1001ms
+
+10:37:29.423 [debug] handled notification client -> server $/cancelRequest in 112µs
+
+10:37:30.424 id=10 [debug] handled request client -> server textDocument/hover in 1000ms
+
+10:37:30.424 [debug] handled notification client -> server $/cancelRequest in 135µs
+
+10:37:33.767 id=11 [debug] handled request client -> server textDocument/codeAction in 315µs
+
+10:37:44.511 id=12 [debug] handled request client -> server textDocument/hover in 1000ms
+
+10:37:44.511 [debug] handled notification client -> server $/cancelRequest in 95µs
+
+10:37:47.155 id=13 [debug] handled request client -> server textDocument/hover in 1000ms
+
+10:37:47.155 [debug] handled notification client -> server $/cancelRequest in 123µs
+
+10:37:48.156 id=14 [debug] handled request client -> server textDocument/hover in 1000ms
+
+10:37:48.156 [debug] handled notification client -> server $/cancelRequest in 64µs
+
+10:37:49.157 id=15 [debug] handled request client -> server textDocument/hover in 1000ms
+
+10:37:49.158 [debug] handled notification client -> server $/cancelRequest in 192µs
+
+10:37:50.159 id=16 [debug] handled request client -> server textDocument/hover in 1001ms
+
+10:37:50.159 [debug] handled notification client -> server $/cancelRequest in 108µs
+
+10:37:52.317 id=17 [debug] handled request client -> server textDocument/hover in 1001ms
+
+10:37:52.318 [debug] handled notification client -> server $/cancelRequest in 301µs
+
+10:40:38.485 id=18 [debug] handled request client -> server textDocument/codeAction in 500µs
+
+10:40:43.055 [debug] handled notification client -> server textDocument/didOpen in 227µs
+
+10:40:43.055 id=19 [debug] handled request client -> server textDocument/codeAction in 262µs
+
+10:40:43.056 id=20 [debug] handled request client -> server textDocument/documentSymbol in 358µs
+
+10:40:43.282 id=21 [debug] handled request client -> server textDocument/documentSymbol in 241µs
+
+10:40:46.752 [debug] handled notification client -> server textDocument/didOpen in 282µs
+
+10:40:46.752 id=22 [debug] handled request client -> server textDocument/codeAction in 424µs
+
+10:40:46.754 id=23 [debug] handled request client -> server textDocument/documentSymbol in 1ms
+
+10:40:46.987 id=24 [debug] handled request client -> server textDocument/documentSymbol in 855µs
+
+10:40:47.284 id=25 [debug] handled request client -> server textDocument/codeAction in 244µs
+
+10:41:01.764 [debug] handled notification client -> server textDocument/didOpen in 1ms
+
+10:41:01.765 id=26 [debug] handled request client -> server textDocument/codeAction in 829µs
+
+10:41:01.768 id=27 [debug] handled request client -> server textDocument/documentSymbol in 2ms
+
+10:41:01.985 id=28 [debug] handled request client -> server textDocument/documentSymbol in 3ms
+
+10:41:10.682 [debug] handled notification client -> server textDocument/didOpen in 1ms
+
+10:41:10.683 id=29 [debug] handled request client -> server textDocument/codeAction in 647µs
+
+10:41:10.685 id=30 [debug] handled request client -> server textDocument/documentSymbol in 2ms
+
+10:41:11.035 id=31 [debug] handled request client -> server textDocument/documentSymbol in 3ms
+
+10:41:11.344 id=32 [debug] handled request client -> server textDocument/codeAction in 275µs
+
+10:41:15.800 id=33 [debug] handled request client -> server textDocument/hover in 1001ms
+
+10:41:15.800 [debug] handled notification client -> server $/cancelRequest in 87µs
+
+10:41:20.319 [debug] handled notification client -> server textDocument/didOpen in 1ms
+
+10:41:20.319 id=34 [debug] handled request client -> server textDocument/codeAction in 256µs
+
+10:41:20.333 id=35 [debug] handled request client -> server textDocument/documentSymbol in 13ms
+
+10:41:20.547 id=36 [debug] handled request client -> server textDocument/documentSymbol in 13ms
+
+10:41:20.999 id=37 [debug] handled request client -> server textDocument/codeAction in 347µs
+
+10:42:09.309 [debug] handled notification client -> server textDocument/didOpen in 615µs
+
+10:42:09.309 id=38 [debug] handled request client -> server textDocument/codeAction in 514µs
+
+10:42:09.311 id=39 [debug] handled request client -> server textDocument/documentSymbol in 1ms
+
+10:42:09.557 id=40 [debug] handled request client -> server textDocument/documentSymbol in 1ms
+
+10:42:10.033 id=41 [debug] handled request client -> server textDocument/codeAction in 438µs
+
+10:42:17.663 id=42 [debug] handled request client -> server textDocument/hover in 1000ms
+
+10:42:17.664 [debug] handled notification client -> server $/cancelRequest in 304µs
+
+10:42:18.665 id=43 [debug] handled request client -> server textDocument/hover in 1001ms
+
+10:42:18.665 [debug] handled notification client -> server $/cancelRequest in 213µs
+
+10:42:19.667 id=44 [debug] handled request client -> server textDocument/hover in 1001ms
+
+10:42:19.667 [debug] handled notification client -> server $/cancelRequest in 219µs
+
+10:42:22.883 id=45 [debug] handled request client -> server textDocument/hover in 1000ms
+
+10:42:22.883 [debug] handled notification client -> server $/cancelRequest in 61µs
+
+10:42:23.884 id=46 [debug] handled request client -> server textDocument/hover in 1001ms
+
+10:42:23.885 [debug] handled notification client -> server $/cancelRequest in 155µs
+
+10:42:24.886 id=47 [debug] handled request client -> server textDocument/hover in 1001ms
+
+10:42:24.886 [debug] handled notification client -> server $/cancelRequest in 151µs
+
+10:42:26.504 id=48 [debug] handled request client -> server textDocument/hover in 1001ms
+
+10:42:26.504 [debug] handled notification client -> server $/cancelRequest in 75µs
+
+10:42:31.774 id=49 [debug] handled request client -> server textDocument/hover in 1000ms
+
+10:42:31.774 [debug] handled notification client -> server $/cancelRequest in 119µs
+
+10:42:42.767 id=50 [debug] handled request client -> server textDocument/hover in 1000ms
+
+10:42:42.767 [debug] handled notification client -> server $/cancelRequest in 90µs
+
+10:42:51.675 id=51 [debug] handled request client -> server textDocument/hover in 1001ms
+
+10:42:51.675 [debug] handled notification client -> server $/cancelRequest in 64µs
+
+10:43:37.765 id=52 [debug] handled request client -> server textDocument/codeAction in 771µs
+
+11:39:48.595 [info] Loading 137 CA(s) from :otp store
+
+11:39:49.759 id=0 [debug] handled request client -> server initialize in 815ms
+
+11:39:49.790 [debug] sent notification server -> client window/logMessage
+
+11:39:49.825 [debug] NextLS v0.22.8 has initialized!
+
+11:39:49.825 [debug] sent notification server -> client window/logMessage
+
+11:39:49.825 [debug] Log file located at /home/twajjo/code/box_turtle/.elixir-tools/next-ls.log
+
+11:39:49.834 [debug] sent notification server -> client window/logMessage
+
+11:39:49.835 id=130 [debug] sent request server -> client client/registerCapability
+
+11:39:49.835 [info] [extension] Credo initializing with options %NextLS.InitOpts.Extensions.Credo{enable: true, cli_options: []}
+
+11:39:50.774 [debug] sent notification server -> client window/logMessage
+
+11:39:50.775 [warning] Failed to unzip and install the bundled Elixir archive.
+
+** (MatchError) no match of right hand side value: {"", 126}
+    (next_ls 0.22.8) lib/next_ls/runtime/bundled_elixir.ex:49: NextLS.Runtime.BundledElixir.install/2
+    (next_ls 0.22.8) lib/next_ls.ex:902: NextLS.handle_notification/2
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:478: anonymous fn/2 in GenLSP.loop/3
+    (telemetry 1.2.1) /Users/runner/work/next-ls/next-ls/deps/telemetry/src/telemetry.erl:321: :telemetry.span/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:474: anonymous fn/7 in GenLSP.loop/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:553: GenLSP.attempt/4
+    (stdlib 5.2) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+
+
+11:39:50.775 [debug] sent notification server -> client window/logMessage
+
+11:39:50.775 [debug] Booting runtimes...
+
+11:39:51.051 [error] ** (FunctionClauseError) no function clause matching in IO.chardata_to_string/1
+    (elixir 1.17.0-dev) lib/io.ex:695: IO.chardata_to_string(nil)
+    (elixir 1.17.0-dev) lib/path.ex:554: Path.dirname/1
+    (next_ls 0.22.8) lib/next_ls.ex:916: NextLS.handle_notification/2
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:478: anonymous fn/2 in GenLSP.loop/3
+    (telemetry 1.2.1) /Users/runner/work/next-ls/next-ls/deps/telemetry/src/telemetry.erl:321: :telemetry.span/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:474: anonymous fn/7 in GenLSP.loop/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:553: GenLSP.attempt/4
+    (stdlib 5.2) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+
+11:39:51.051 [debug] sent notification server -> client window/logMessage
+
+11:39:51.074 [debug] handled notification client -> server textDocument/didOpen in 22ms
+
+11:39:51.192 id=1 [debug] handled request client -> server textDocument/documentSymbol in 118ms
+
+11:39:51.358 id=2 [debug] handled request client -> server textDocument/codeAction in 166ms
+
+11:39:51.371 id=3 [debug] handled request client -> server textDocument/documentSymbol in 12ms
+
+11:39:51.382 [debug] handled notification client -> server $/cancelRequest in 11ms
+
+11:39:51.384 id=4 [debug] handled request client -> server textDocument/codeAction in 1ms
+
+11:39:53.359 [debug] sent notification server -> client window/showMessage
+
+11:39:53.372 [debug] sent notification server -> client window/logMessage
+
+11:39:53.372 [info] Downloaded 0.23.3 of Next LS
+
+11:41:22.296 [debug] handled notification client -> server $/setTrace in 22ms
+
+14:33:38.132 [info] Loading 137 CA(s) from :otp store
+
+14:33:38.573 [notice] Application next_ls exited: NextLS.Application.start(:normal, []) returned an error: shutdown: failed to start child: NextLS.LSPSupervisor
+    ** (EXIT) shutdown: failed to start child: NextLS
+        ** (EXIT) an exception was raised:
+            ** (ErlangError) Erlang error: :enoent
+                (elixir 1.17.3) lib/system.ex:1114: System.cmd("elixir", ["--short-version"], [])
+                (next_ls 0.23.3) lib/next_ls.ex:47: NextLS.init/2
+                (gen_lsp 0.10.0) lib/gen_lsp.ex:201: GenLSP.init/1
+                (stdlib 6.2) proc_lib.erl:329: :proc_lib.init_p_do_apply/3
+
+14:33:41.787 [info] Loading 137 CA(s) from :otp store
+
+14:33:42.153 [notice] Application next_ls exited: NextLS.Application.start(:normal, []) returned an error: shutdown: failed to start child: NextLS.LSPSupervisor
+    ** (EXIT) shutdown: failed to start child: NextLS
+        ** (EXIT) an exception was raised:
+            ** (ErlangError) Erlang error: :enoent
+                (elixir 1.17.3) lib/system.ex:1114: System.cmd("elixir", ["--short-version"], [])
+                (next_ls 0.23.3) lib/next_ls.ex:47: NextLS.init/2
+                (gen_lsp 0.10.0) lib/gen_lsp.ex:201: GenLSP.init/1
+                (stdlib 6.2) proc_lib.erl:329: :proc_lib.init_p_do_apply/3
+
+14:33:45.573 [info] Loading 137 CA(s) from :otp store
+
+14:33:46.545 [notice] Application next_ls exited: NextLS.Application.start(:normal, []) returned an error: shutdown: failed to start child: NextLS.LSPSupervisor
+    ** (EXIT) shutdown: failed to start child: NextLS
+        ** (EXIT) an exception was raised:
+            ** (ErlangError) Erlang error: :enoent
+                (elixir 1.17.3) lib/system.ex:1114: System.cmd("elixir", ["--short-version"], [])
+                (next_ls 0.23.3) lib/next_ls.ex:47: NextLS.init/2
+                (gen_lsp 0.10.0) lib/gen_lsp.ex:201: GenLSP.init/1
+                (stdlib 6.2) proc_lib.erl:329: :proc_lib.init_p_do_apply/3
+
+14:33:49.845 [info] Loading 137 CA(s) from :otp store
+
+14:33:50.127 [notice] Application next_ls exited: NextLS.Application.start(:normal, []) returned an error: shutdown: failed to start child: NextLS.LSPSupervisor
+    ** (EXIT) shutdown: failed to start child: NextLS
+        ** (EXIT) an exception was raised:
+            ** (ErlangError) Erlang error: :enoent
+                (elixir 1.17.3) lib/system.ex:1114: System.cmd("elixir", ["--short-version"], [])
+                (next_ls 0.23.3) lib/next_ls.ex:47: NextLS.init/2
+                (gen_lsp 0.10.0) lib/gen_lsp.ex:201: GenLSP.init/1
+                (stdlib 6.2) proc_lib.erl:329: :proc_lib.init_p_do_apply/3
+
+14:33:53.349 [info] Loading 137 CA(s) from :otp store
+
+14:33:53.537 [notice] Application next_ls exited: NextLS.Application.start(:normal, []) returned an error: shutdown: failed to start child: NextLS.LSPSupervisor
+    ** (EXIT) shutdown: failed to start child: NextLS
+        ** (EXIT) an exception was raised:
+            ** (ErlangError) Erlang error: :enoent
+                (elixir 1.17.3) lib/system.ex:1114: System.cmd("elixir", ["--short-version"], [])
+                (next_ls 0.23.3) lib/next_ls.ex:47: NextLS.init/2
+                (gen_lsp 0.10.0) lib/gen_lsp.ex:201: GenLSP.init/1
+                (stdlib 6.2) proc_lib.erl:329: :proc_lib.init_p_do_apply/3
