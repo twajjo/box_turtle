@@ -1,98 +1,104 @@
-defmodule Test.ModuleModule do
-  defmacro make_module(module) do
-    quote do
-      defmodule unquote(module) do
-        @compile {:no_warn_undefined, BoxTurtle.Debug.Test.FakeLogger.Mock}
-        @compile {:no_warn_undefined, {BoxTurtle.Debug.Test.FakeLogger.Mock, :debug, 1}}
-        @compile {:no_warn_undefined, {BoxTurtle.Debug.Test.FakeLogger.Mock, :info, 1}}
-        use BoxTurtle.Debug.PipeDebug, logger_module: BoxTurtle.Debug.PipeDebug.Test.FakeLogger.Mock
+defmodule BoxTurtle.Debug.PipeDebugTest.FakeLogger do
+  @callback debug(binary()) :: :ok
+  @callback info(binary()) :: :ok
+end
 
-        def debug_something(something) do
-          something
-          |> debug("From #{__MODULE__}")
-        end
-        def debug_something(something, condition) do
-          something
-          |> debug("Conditional #{condition.(something)} from #{__MODULE__}", condition: condition)
-        end
-      end
+Mox.defmock(BoxTurtle.Debug.PipeDebugTest.FakeLogger.Mock, for: BoxTurtle.Debug.PipeDebugTest.FakeLogger)
+
+for module <- [BoxTurtle.Debug.PipeDebugTest.A, BoxTurtle.Debug.PipeDebugTest.B] do
+  defmodule module do
+    use BoxTurtle.Debug.PipeDebug, logger_module: BoxTurtle.Debug.PipeDebugTest.FakeLogger.Mock
+
+    def debug_something(something), do: debug(something, "From #{inspect(__MODULE__)}")
+
+    def debug_something(something, condition) do
+      debug(something, "Conditional from #{inspect(__MODULE__)}", condition: condition)
     end
   end
 end
 
-defmodule BoxTurtle.Debug.PipeDebug.Test do
-  @moduledoc false
+defmodule BoxTurtle.Debug.PipeDebugTest.InfoLevel do
+  use BoxTurtle.Debug.PipeDebug,
+    logger_module: BoxTurtle.Debug.PipeDebugTest.FakeLogger.Mock,
+    logger_macro: :info
 
-  use ExUnit.Case
+  def debug_something(something), do: debug(something)
+end
 
-  require Test.ModuleModule
+defmodule BoxTurtle.Debug.PipeDebugTest do
+  # Changes application env, so not async.
+  use ExUnit.Case, async: false
 
   import Mox
 
-  defmodule FakeLogger.API do
-    @callback debug(binary()) :: :ok
-    @callback info(binary()) :: :ok
+  alias BoxTurtle.Debug.PipeDebugTest.{A, B, InfoLevel}
+  alias BoxTurtle.Debug.PipeDebugTest.FakeLogger.Mock, as: FakeLogger
+
+  setup :verify_on_exit!
+
+  setup do
+    on_exit(fn -> Application.delete_env(:box_turtle, :debug_enabled_modules) end)
   end
 
-  setup_all do
-    BoxTurtle.Debug.PipeDebug.Test.FakeLogger
-    |> Module.concat(Mock)
-    |> Mox.defmock(for: Module.concat(FakeLogger, API))
-
-    :ok
-  end
-
-  @compile {:no_warn_undefined, BoxTurtle.Debug.Test.FakeLogger.Mock}
-  @compile {:no_warn_undefined, {BoxTurtle.Debug.Test.FakeLogger.Mock, :debug, 1}}
-  @compile {:no_warn_undefined, {BoxTurtle.Debug.Test.FakeLogger.Mock, :info, 1}}
-  Test.ModuleModule.make_module(A)
-  Test.ModuleModule.make_module(B)
-
-  @fake_logger BoxTurtle.Debug.PipeDebug.Test.FakeLogger.Mock
+  defp enable(modules), do: Application.put_env(:box_turtle, :debug_enabled_modules, modules)
 
   describe "debug/3" do
-    test "Will only log debug messages from enabled modules" do
-      Application.put_env(:box_turtle, :debug_enabled_modules, [])
-      Application.put_env(:box_turtle, :logger_macro, :debug)
-      expect(@fake_logger, :debug, 0, fn _ -> :ok end)
-      expect(@fake_logger, :info, 0, fn _ -> :ok end)
-      assert(A.debug_something("Warf") == "Warf")
-      expect(@fake_logger, :debug, 0, fn _ -> :ok end)
-      expect(@fake_logger, :info, 0, fn _ -> :ok end)
-      assert(B.debug_something("Werf") == "Werf")
-      Application.put_env(:box_turtle, :debug_enabled_modules, [A])
-      Application.put_env(:box_turtle, :logger_macro, :debug)
-      expect(@fake_logger, :debug, 1, fn _ -> :ok end)
-      expect(@fake_logger, :info, 0, fn _ -> :ok end)
-      assert(A.debug_something("Narf") == "Narf")
-      expect(@fake_logger, :debug, 0, fn _ -> :ok end)
-      expect(@fake_logger, :info, 0, fn _ -> :ok end)
-      assert(B.debug_something("Nerf") == "Nerf")
-      Application.put_env(:box_turtle, :debug_enabled_modules, [B])
-      Application.put_env(:box_turtle, :logger_macro, :debug)
-      expect(@fake_logger, :debug, 0, fn _ -> :ok end)
-      expect(@fake_logger, :info, 0, fn _ -> :ok end)
-      assert(A.debug_something("Scarf") == "Scarf")
-      expect(@fake_logger, :debug, 1, fn _ -> :ok end)
-      expect(@fake_logger, :info, 0, fn _ -> :ok end)
-      assert(B.debug_something("Surf") == "Surf")
-      Application.put_env(:box_turtle, :debug_enabled_modules, [A, B])
-      Application.put_env(:box_turtle, :logger_macro, :debug)
-      expect(@fake_logger, :debug, 1, fn _ -> :ok end)
-      expect(@fake_logger, :info, 0, fn _ -> :ok end)
-      assert(A.debug_something("Scarf") == "Scarf")
-      expect(@fake_logger, :debug, 1, fn _ -> :ok end)
-      expect(@fake_logger, :info, 0, fn _ -> :ok end)
-      assert(B.debug_something("Surf") == "Surf")
+    test "returns the value and logs nothing for modules that are not enabled" do
+      enable([])
+      assert A.debug_something("Warf") == "Warf"
+      assert B.debug_something("Werf") == "Werf"
     end
-    test "Will log debug messages conditionally" do
-      Application.put_env(:box_turtle, :debug_enabled_modules, [A])
-      Application.put_env(:box_turtle, :logger_macro, :debug)
-      expect(@fake_logger, :debug, 1, fn _ -> :ok end)
-      expect(@fake_logger, :info, 0, fn _ -> :ok end)
-      assert(A.debug_something(2, fn value -> Enum.member?(1..5, value) end) == 2)
-      expect(@fake_logger, :debug, 1, fn _ -> :ok end)
-      assert(A.debug_something(10, fn value -> Enum.member?(1..5, value) end) == 10)
+
+    test "logs only for enabled modules" do
+      enable([A])
+      expect(FakeLogger, :debug, fn message -> assert message =~ ~s(From BoxTurtle.Debug.PipeDebugTest.A: "Narf") end)
+      assert A.debug_something("Narf") == "Narf"
+      assert B.debug_something("Nerf") == "Nerf"
+    end
+
+    test "logs for every enabled module" do
+      enable([A, B])
+      expect(FakeLogger, :debug, 2, fn _ -> :ok end)
+      assert A.debug_something("Scarf") == "Scarf"
+      assert B.debug_something("Surf") == "Surf"
+    end
+
+    test "logs only when the condition holds" do
+      enable([A])
+      in_range? = &(&1 in 1..5)
+      expect(FakeLogger, :debug, 1, fn _ -> :ok end)
+      assert A.debug_something(2, in_range?) == 2
+      assert A.debug_something(10, in_range?) == 10
+    end
+
+    test "logs at the configured level" do
+      enable([InfoLevel])
+      expect(FakeLogger, :info, fn message -> assert message == ":hello" end)
+      assert InfoLevel.debug_something(:hello) == :hello
+    end
+
+    test "works with the real Logger" do
+      defmodule RealLogger do
+        use BoxTurtle.Debug.PipeDebug
+        def go(value), do: debug(value, "real")
+      end
+
+      enable([RealLogger])
+
+      log =
+        ExUnit.CaptureLog.capture_log([level: :debug], fn ->
+          Logger.configure(level: :debug)
+          assert RealLogger.go(42) == 42
+        end)
+
+      Logger.configure(level: :warning)
+      assert log =~ "real: 42"
+    end
+  end
+
+  test "rejects unsupported logger macros" do
+    assert_raise ArgumentError, ~r/:logger_macro must be :debug or :info/, fn ->
+      Code.compile_string("defmodule BadDebug do use BoxTurtle.Debug.PipeDebug, logger_macro: :error end")
     end
   end
 end

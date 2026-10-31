@@ -1,304 +1,269 @@
 defmodule BoxTurtle.Schema.Query do
   @moduledoc """
-  A macro module for creating standard queries for id-based (string or integer) primary-key tables.
+  Generates the standard read functions of `BoxTurtle.Schema.Query.API` for an Ecto schema.
 
-  See BoxTurtle.Schema.Query.API for complete details and callback/function documentation.
+      defmodule MyApp.Blog.Post.Query do
+        use BoxTurtle.Schema.Query,
+          repo: MyApp.Repo,
+          default_sort: [desc: :inserted_at],
+          default_preloads: [:author]
+      end
 
-  Options
-    repo: module(), REQUIRED
-    schema: module(), REQUIRED
-      The schema module to implement Query methods for.
-    default_sort: [atom()] | [{:asc | :desc, atom()}], default: [{:asc, :id}]
-      When given, specifies the default sort order for list queries.
-    default_preloads: [atom()], default: []
-      When given, preloads the specified associated tables.
-    filter_module: module(), default: BoxTurtle.Schema.Filters
-      When specified, provides a module that implements filter_with implementations
-      of BoxTurtle.Schema.Filters.API.
-    sorting_module: module(), default: BoxTurtle.Schema.Sort
-      When specified, provides a module that implements sort_by functions
-      specific to the schema and that implement BoxTurtle.Schema.Sort.API.
-    primary_key: atom(), default: :id
+      MyApp.Blog.Post.Query.list!(filters: [status: "published"], page: 2)
+      MyApp.Blog.Post.Query.count!(group_by: [:status])
+      {:ok, post} = MyApp.Blog.Post.Query.get(id)
+
+  See `BoxTurtle.Schema.Query.API` for the generated functions and their call-time options.
+
+  ## Options
+
+    * `:repo` - the `Ecto.Repo` to query. Required.
+    * `:schema` - the schema module. Defaults to the parent of the using module (`MyApp.Blog.Post` above).
+    * `:primary_key` - defaults to `:id`.
+    * `:default_sort` - sort applied to lists unless overridden. Defaults to `[primary_key]`.
+    * `:default_preloads` - associations to preload. Defaults to `[]`.
+    * `:default_distinct` - columns for `DISTINCT`. Defaults to `[]`.
+    * `:filter_module` - a `BoxTurtle.Schema.Filters.API` implementation. Defaults to `BoxTurtle.Schema.Filters`.
+    * `:sorting_module` - a `BoxTurtle.Schema.Sort.API` implementation. Defaults to `BoxTurtle.Schema.Sort`.
+    * `:page_size` - rows per page when `:page` is a number. Defaults to 40.
+    * `:delegates` - `[{DelegateModule, %Pattern{}}]`, see `delegate/1`.
+    * `:ownership_scope` - module passed to delegates as `:row_module`. Defaults to each delegate module.
+
+  ## Extensions
+
+  `extend/2` and `delegate/1` generate the optional `*_by(pattern, opts \\\\ [])` functions. Each one gets:
+
+    1. a clause per `:delegates` entry whose module implements the function, forwarding `%Pattern{}` arguments
+       to it with this module's settings injected into the options, so the delegate queries this schema;
+    2. for `count_by`, `list_by` and `query_by!` (and their variants), a `nil` clause that falls back to the
+       unscoped `count`, `list` or `query!`;
+    3. with `extend/2`, your own clauses.
+
+  ```
+  use BoxTurtle.Schema.Query, repo: MyApp.Repo, delegates: [{MyApp.ByAuthor, %MyApp.Blog.Author{}}]
+
+  delegate [:list_by, :count_by]
+
+  extend :get_by! do
+    def get_by!(slug, opts) when is_binary(slug), do: get!(%{slug: slug}, opts)
+  end
+  ```
   """
 
+  @extensions %{
+    count_by: :count,
+    count_by!: :count!,
+    get_by: nil,
+    get_by!: nil,
+    list_by: :list,
+    list_by!: :list!,
+    query_by!: :query!
+  }
+
   defmacro __using__(options) do
-    default_schema =
-      __MODULE__
-      |> Module.split()
-      |> List.delete_at(-1)
-      |> Module.concat()
+    env = __CALLER__
 
-    options = options
-      |> Keyword.put_new(:schema, default_schema)
+    options =
+      Keyword.validate!(options, [
+        :repo,
+        :schema,
+        :default_sort,
+        delegates: [],
+        ownership_scope: nil,
+        default_preloads: [],
+        default_distinct: [],
+        filter_module: BoxTurtle.Schema.Filters,
+        sorting_module: BoxTurtle.Schema.Sort,
+        primary_key: :id,
+        page_size: BoxTurtle.Schema.Pagination.default_page_size()
+      ])
 
-    # Process options
-    delegates = options
-#     |> IO.inspect(label: "Raw options")
-      |> Keyword.get(:delegates, [])
-    scope = options
-      |> Keyword.get(:ownership_scope, nil)
-    schema = options
-      |> Keyword.get(:schema, nil)
+    repo = options[:repo] || raise ArgumentError, "use BoxTurtle.Schema.Query requires the :repo option"
+    primary_key = options[:primary_key]
 
-    # Make module-wide global settings available to extension/delegation macros
-    Module.register_attribute(__CALLER__.module, :__extensions_delegates, persist: true)
-    Module.put_attribute(__CALLER__.module, :__extensions_delegates, delegates)
-    Module.register_attribute(__CALLER__.module, :__extensions_schema, persist: true)
-    Module.put_attribute(__CALLER__.module, :__extensions_schema, schema)
-    Module.register_attribute(__CALLER__.module, :__extensions_ownership_scope, persist: true)
-    Module.put_attribute(__CALLER__.module, :__extensions_ownership_scope, scope)
+    settings = [
+      repo: expand(repo, env),
+      schema: expand(options[:schema] || parent_module(env.module), env),
+      primary_key: primary_key,
+      default_sort: options[:default_sort] || [primary_key],
+      default_preloads: options[:default_preloads],
+      default_distinct: options[:default_distinct],
+      filter_module: expand(options[:filter_module], env),
+      sorting_module: expand(options[:sorting_module], env),
+      page_size: options[:page_size]
+    ]
 
-    # Inject header requirements for extension generation
+    # Read back by extend/2 and delegate/1 while the using module compiles.
+    Module.put_attribute(env.module, :__box_turtle_query__, %{
+      scope: expand(options[:ownership_scope], env),
+      delegates: options[:delegates] |> List.wrap() |> Enum.map(&normalize_delegate(&1, env))
+    })
+
     quote do
-      use BoxTurtle.Debug.PipeDebug
+      use BoxTurtle.Schema.Query.Options, unquote(settings)
 
-      use BoxTurtle.Schema.Query.Options, unquote(options)
       import Ecto.Query
-      import BoxTurtle.Schema.Pagination
-      import BoxTurtle.Common.ReturnOkOr
-      import BoxTurtle.Schema.Query
       import BoxTurtle.Schema.Query.Helpers
+      import BoxTurtle.Schema.Query, only: [extend: 2, delegate: 1]
 
       @behaviour BoxTurtle.Schema.Query.API
 
-      @supported_aggregates ~w(count)a
+      @impl BoxTurtle.Schema.Query.API
+      def count(opts \\ []), do: {:ok, count!(opts)}
 
-      @impl true
-      def count(opts \\ []) do
-        {:ok, count!(opts)}
-      end
-
-      @impl true
-      def count!(opts \\ [])
-      def count!(opts) do
-        schema()
-        |> pipe_query!(opts |> Keyword.put(:aggregate, :count))
+      @impl BoxTurtle.Schema.Query.API
+      def count!(opts \\ []) do
+        opts
+        |> schema()
+        |> pipe_query!(Keyword.put(opts, :aggregate, :count))
         |> aggregate_result!(:count, grouping(opts), repo(opts), opts)
       end
 
-      @impl true
-      def get!(id, opts \\ [])
-      def get!(nil, opts), do: nil
-      def get!(%{} = id, opts) do
-        schema()
-        |> build_query!(filter_module(opts), opts)
-        |> multi_key_where(id, opts)
-        |> preloads(joining(default_preloads(opts), opts))
-        |> debug("Before")
-        |> repo(opts).one()
-        |> debug("After")
-      end
-      def get!(id, opts) do
-        schema()
-        |> build_query!(filter_module(), opts)
-        |> where([q], ^[{primary_key(), id}])
-        |> preloads(joining(default_preloads(opts), opts))
-        |> debug("Before")
-        |> repo(opts).one()
-        |> debug("After")
+      @impl BoxTurtle.Schema.Query.API
+      def get(key, opts \\ []) do
+        case get!(key, opts) do
+          nil -> {:error, :not_found}
+          item -> {:ok, item}
+        end
       end
 
-      def multi_key_where(query, %{} = ids, _opts) do
-        primary =
-          ids
-          |> Enum.map(fn id -> id end)
+      @impl BoxTurtle.Schema.Query.API
+      def get!(key, opts \\ [])
+      def get!(nil, _opts), do: nil
 
-        query
-        |> where([q], ^primary)
-      end
-
-      @impl true
-      def get(id, opts \\ []) do
-        get!(id, opts)
-        |> return_ok_or(%{reason: "No #{schema() |> Module.split() |> List.last()} found", id: id})
-      end
-
-      @impl true
-      def list(opts \\ []) do
-        opts |> debug("list")
-        {:ok, list!(opts)}
-      end
-
-      @impl true
-      def list!(opts \\ []) do
-        distinct = opts
-          |> query_distinction(default_distinct(opts))
-
-        query_opts = Keyword.get(opts, :query_opts, [])
-
+      def get!(key, opts) do
         opts
-        |> debug("list!")
-        |> query!()
-        |> unique(distinct)
-        |> debug("Before")
-        |> repo(opts).all(query_opts)
-        |> debug("After")
+        |> schema()
+        |> build_query!(filter_module(opts), opts)
+        |> where_key(key, primary_key(opts))
+        |> preloads(joining(default_preloads(opts), opts))
+        |> repo(opts).one()
       end
 
-      @impl true
-      def pipe_query!(query, opts \\ []) do
-        if is_aggregate?(opts) do
-          # Have to convert distinct option here-- default_distinct is not callable from Helper module.
-          distinct = opts
-            |> aggregate_distinction(default_distinct(opts))
-          options = opts
-            |> Keyword.put(:distinct, distinct)
+      @impl BoxTurtle.Schema.Query.API
+      def list(opts \\ []), do: {:ok, list!(opts)}
 
-          query
-          |> aggregate_query!(aggregation(options), filter_module(options), options)
-          |> debug("Aggregate query")
+      @impl BoxTurtle.Schema.Query.API
+      def list!(opts \\ []) do
+        opts
+        |> query!()
+        |> repo(opts).all(Keyword.get(opts, :query_opts, []))
+      end
+
+      @impl BoxTurtle.Schema.Query.API
+      def pipe_query!(query, opts \\ []) do
+        if aggregate?(opts) do
+          opts = Keyword.put(opts, :distinct, aggregate_distinction(opts, default_distinct(opts)))
+          aggregate_query!(query, aggregation(opts), filter_module(opts), opts)
         else
           query
-          |> build_listings!(sorting_module(opts), default_sort(opts), opts)
+          |> build_listings!(sorting_module(opts), default_sort(opts), opts, page_size(opts))
           |> build_query!(filter_module(opts), opts)
+          |> unique(query_distinction(opts, default_distinct(opts)))
           |> preloads(joining(default_preloads(opts), opts))
         end
       end
 
-      @impl true
-      def query!(opts \\ []) do
-        schema(opts)
-        |> pipe_query!(opts)
-      end
+      @impl BoxTurtle.Schema.Query.API
+      def query!(opts \\ []), do: opts |> schema() |> pipe_query!(opts)
 
-      @impl true
-      def count_by(_pattern, _opts), do: {:error, :not_implemented}
-      @impl true
-      def get_by(_pattern, _opts), do: {:error, :not_implemented}
-      @impl true
-      def list_by(_pattern, _opts), do: {:error, :not_implemented}
-      @impl true
-      def count_by!(_pattern, _opts), do: 0
-      @impl true
-      def get_by!(_pattern, _opts), do: nil
-      @impl true
-      def list_by!(_pattern, _opts), do: []
-      @impl true
-      def query_by!(_pattern, _opts), do: nil
-
-      defoverridable BoxTurtle.Schema.Query.API
+      defoverridable count: 0,
+                     count: 1,
+                     count!: 0,
+                     count!: 1,
+                     get: 1,
+                     get: 2,
+                     get!: 1,
+                     get!: 2,
+                     list: 0,
+                     list: 1,
+                     list!: 0,
+                     list!: 1,
+                     pipe_query!: 1,
+                     pipe_query!: 2,
+                     query!: 0,
+                     query!: 1
     end
   end
 
-  defmacro delegate(extensions \\ []) do
-    # Get global macro options
-    extensions
-    |> List.wrap()
-    |> Enum.reduce([], fn(extension, delegates) ->
-      [
-        quote do
-          @impl true
-          def unquote(extension)(pattern, opts \\ [])
-        end
-      ]
-      # Delegate patterns to "common" modules that implement BoxTurtle.Schema.Query.API (e.g., BySite and/or ByClient)
-      ++ get_delegates(extension, __CALLER__)
-      ++ get_nil_handler(extension, __CALLER__)
-      ++ delegates
-    # ++ get_catchall_handler(extension, __CALLER__) ...?  Can also be in the block above ^^^^
-    end)
+  @doc """
+  Defines the extension function `extension` (one of `#{inspect(Map.keys(@extensions))}`) with its delegate
+  and `nil` clauses, followed by the clauses in `block`.
+  """
+  defmacro extend(extension, do: block) do
+    {:__block__, [], extension_clauses(extension, __CALLER__) ++ [block]}
   end
 
-  defmacro extend(extension, do: block) do
-    [
+  @doc """
+  Defines each of the given extension functions with only their delegate and `nil` clauses.
+  """
+  defmacro delegate(extensions) do
+    clauses = extensions |> List.wrap() |> Enum.flat_map(&extension_clauses(&1, __CALLER__))
+    {:__block__, [], clauses}
+  end
+
+  defp extension_clauses(extension, env) do
+    if !Map.has_key?(@extensions, extension) do
+      raise ArgumentError,
+            "unknown Query extension #{inspect(extension)}, expected one of #{inspect(Map.keys(@extensions))}"
+    end
+
+    config =
+      Module.get_attribute(env.module, :__box_turtle_query__) ||
+        raise ArgumentError, "extend/2 and delegate/1 require `use BoxTurtle.Schema.Query` first"
+
+    head =
       quote do
-        @impl true
+        @impl BoxTurtle.Schema.Query.API
         def unquote(extension)(pattern, opts \\ [])
       end
-    ]
-    # Delegate patterns to "common" modules that implement BoxTurtle.Schema.Query.API (e.g., BySite and/or ByClient)
-    ++ get_delegates(extension, __CALLER__)
-    ++ get_nil_handler(extension, __CALLER__)
-    # Custom query extensions
-    ++ [
-      quote do
-        unquote(block)
-      end
-    ]
-    # ++ get_catchall_handler(extension, __CALLER__) ...?  Can also be in the block above ^^^^
+
+    [head] ++ nil_clause(extension) ++ delegate_clauses(extension, config)
   end
 
-  defp get_nil_handler(extension, caller) do
-    %{
-      count_by: :count,
-      count_by!: :count!,
-      list_by: :list,
-      list_by!: :list!
-    }
-    |> Enum.reduce([],
-      fn
-        {^extension, remap}, acc ->
-          [
-            quote do
-              @impl true
-              def unquote(extension)(nil, opts) do
-                unquote(caller.module).unquote(remap)(opts)
-              end
-            end
-          ] ++ acc
-        {_, _}, acc -> [] ++ acc
-      end
-    )
-  end
+  defp nil_clause(extension) do
+    case Map.fetch!(@extensions, extension) do
+      nil ->
+        []
 
-  defp get_delegates(extension, caller) do
-    # Get the common options buried in the module when __using__ macro executed
-    schema = Module.get_attribute(caller.module, :__extensions_schema)
-      |> extract_schema(caller)
-    scope = Module.get_attribute(caller.module, :__extensions_ownership_scope)
-      |> extract_scope(caller)
-#      |> IO.inspect(label: "#{caller.module}.#{extension} delegate ownership scope")
-
-    # Get delegation modules and patterns to match.
-    Module.get_attribute(caller.module, :__extensions_delegates)
-    |> List.wrap()
-    # |> IO.inspect(label: "starting delegates")  # Don't even think of PipeDebug before compiling!
-    |> Enum.map(fn delegate ->
-      case extract(delegate, scope, caller) do
-        %{delegate: d_mod, scope: s_mod, pattern: pattern} = _delegate_params ->
-#          delegate_params |> IO.inspect(label: "#{caller.module}.#{extension}: Delegation params")
+      unscoped ->
+        [
           quote do
-            @impl true
-            def unquote(extension)(%unquote(pattern){} = match, opts) do
-              unquote(d_mod).unquote(extension)(match,
-                opts
-                |> inject_query_options()
-                |> Keyword.put(:schema, unquote(schema))
-                |> Keyword.put(:row_module, unquote(s_mod))
-              )
-            end
+            def unquote(extension)(nil, opts), do: unquote(unscoped)(opts)
           end
+        ]
+    end
+  end
+
+  # Only delegates that implement the extension get a clause.
+  defp delegate_clauses(extension, %{delegates: delegates, scope: scope}) do
+    for {delegate, pattern} <- delegates,
+        delegate |> Code.ensure_compiled!() |> function_exported?(extension, 2) do
+      quote do
+        def unquote(extension)(%unquote(pattern){} = match, opts) do
+          unquote(delegate).unquote(extension)(
+            match,
+            opts
+            |> inject_query_options()
+            |> Keyword.put(:row_module, unquote(scope || delegate))
+          )
+        end
       end
-    end)
+    end
   end
 
-  defp extract_schema({:__aliases__, _location, schema}, caller), do: glom(schema, caller)
+  # Accepts `{Delegate, %Pattern{}}` or `{Delegate, Pattern}`.
+  defp normalize_delegate({delegate, {:%, _, [pattern, {:%{}, _, _}]}}, env),
+    do: {expand(delegate, env), expand(pattern, env)}
 
-  defp extract_scope(nil, _caller), do: nil
-  defp extract_scope({:__aliases__, _location, caller_module}, caller), do: glom(caller_module, caller)
-  defp extract_scope({:__MODULE__, _location, nil}, caller), do: glom(caller.module, caller)
+  defp normalize_delegate({delegate, pattern}, env), do: {expand(delegate, env), expand(pattern, env)}
 
-  defp extract({{:__aliases__, _, delegate_module}, {:%, _, [{:__aliases__, _, pattern}, {:%{}, _, _}]}}, nil, caller) do
-    %{
-      delegate: delegate_module |> glom(caller),
-      pattern: pattern |> glom(caller),
-      scope: delegate_module |> glom(caller)
-    }
-  end
-  defp extract({{:__aliases__, _, delegate_module}, {:%, _, [{:__aliases__, _, pattern}, {:%{}, _, _}]}}, scope, caller) do
-    %{
-      delegate: delegate_module |> glom(caller),
-      pattern: pattern |> glom(caller),
-      scope: scope |> glom(caller)
-    }
+  defp normalize_delegate(other, _env) do
+    raise ArgumentError, "invalid Query delegate #{Macro.to_string(other)}, expected {DelegateModule, %Pattern{}}"
   end
 
-  defp glom(list, caller) do
-    alias = list
-    |> List.wrap()
-    |> Module.concat()
-    caller.aliases
-    |> Keyword.get(alias, alias)
-  end
+  defp expand(ast, env), do: Macro.expand(ast, env)
 
+  @doc false
+  def parent_module(module), do: module |> Module.split() |> Enum.drop(-1) |> Module.concat()
 end

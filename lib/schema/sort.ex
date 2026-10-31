@@ -1,54 +1,87 @@
 defmodule BoxTurtle.Schema.Sort do
-  use BoxTurtle.Debug.PipeDebug
+  @moduledoc """
+  Default sorting for `BoxTurtle.Schema.Query`, and a base for schema-specific sort modules.
 
+  A sort specification is a list whose elements are any of:
+
+    * `:column` - ascending order on the column
+    * `{direction, :column}` - e.g. `{:desc_nulls_last, :reported_at}`
+    * `{direction, [:column, ...]}` - the same direction for several columns
+
+  where `direction` is one of `#{inspect(~w(asc asc_nulls_first asc_nulls_last desc desc_nulls_first desc_nulls_last)a)}`
+  (see `Ecto.Query.order_by/3`). Keyword lists such as `[desc: :inserted_at, asc: :id]` therefore work as-is.
+
+  ## Custom sorts
+
+  Use this module and add `sort_by/2` clauses for named sorts that aren't plain columns. Anything your clauses
+  don't match falls through to the default behaviour one element at a time:
+
+      defmodule MyApp.Post.Sort do
+        use BoxTurtle.Schema.Sort
+        import Ecto.Query
+
+        def sort_by(query, [:popularity | rest]) do
+          query
+          |> order_by([p], desc: p.likes + p.shares)
+          |> sort_by(rest)
+        end
+      end
+
+  Then pass `sorting_module: MyApp.Post.Sort` to `use BoxTurtle.Schema.Query`.
+  """
   @behaviour BoxTurtle.Schema.Sort.API
 
   import Ecto.Query
 
-  # https://hexdocs.pm/ecto/Ecto.Query.html#order_by/3
-  @valid_order_options ~w(asc asc_nulls_first asc_nulls_last desc desc_nulls_first desc_nulls_last)a
+  @directions ~w(asc asc_nulls_first asc_nulls_last desc desc_nulls_first desc_nulls_last)a
 
-  # TODO: Make dumb-as-dirt-- should only be concerned with general column case, all customs belong as sort
-  # modules under the appropriate schema model.
+  defmacro __using__(_opts) do
+    quote do
+      @behaviour BoxTurtle.Schema.Sort.API
+      @before_compile BoxTurtle.Schema.Sort
+    end
+  end
 
-  # Should recursively call until all sort_by fields are processed...
-  @impl true
-  def sort_by(query, []), do: query
+  @doc false
+  defmacro __before_compile__(_env) do
+    # No @impl here: these clauses follow the user's own sort_by/2 clauses.
+    quote do
+      def sort_by(query, []), do: query
 
-  # Custom sorts go here, since this is a general handler, these should be limited to universally supported non-field sorts.
-  # TODO: This still smells of a special case...
-  @impl true
-  def sort_by(query, [{order, []} = _sort | more_sorts]) when order in @valid_order_options do
-    sort_by(query, more_sorts)
+      def sort_by(query, [spec | specs]) do
+        query
+        |> BoxTurtle.Schema.Sort.apply_sort(spec)
+        |> sort_by(specs)
+      end
+
+      def sort_by(query, spec), do: sort_by(query, [spec])
+    end
   end
 
   @impl true
-  def sort_by(query, [{order, [column | columns]} = sort | more_sorts]) when order in @valid_order_options and is_atom(column) do
-    sort |> debug("SORT_BY SORT by multifield")
-    sort = List.wrap({order, column})
-    query
-    |> order_by(^sort)
-    |> sort_by(List.wrap({order, columns}) ++ more_sorts)
+  def sort_by(query, specs) do
+    specs
+    |> List.wrap()
+    |> Enum.reduce(query, &apply_sort(&2, &1))
   end
 
-  # Default is to order by the named field (with default order ascending)
-  @impl true
-  def sort_by(query, [{order, _} = sort | more_sorts]) when order in @valid_order_options do
-    sort |> debug("SORT_BY SORT tuple with order when")
-    sort = List.wrap(sort)
-    query
-    |> order_by(^sort)
-    |> sort_by(more_sorts)
+  @doc """
+  Applies a single sort element (see the module documentation) to the query.
+
+  Raises `ArgumentError` for anything else.
+  """
+  @spec apply_sort(Ecto.Queryable.t(), term()) :: Ecto.Queryable.t()
+  def apply_sort(query, column) when is_atom(column), do: order_by(query, ^[column])
+
+  def apply_sort(query, {direction, column}) when direction in @directions and is_atom(column) do
+    order_by(query, ^[{direction, column}])
   end
-  # changing to handle keyword list as per https://hexdocs.pm/ecto/Ecto.Query.html#order_by/3
-  # example, for asset we want: [desc_nulls_last: :last_report] as the order_by, similar for batteries, and more.
-  # anytime there might be null values crowding the top of the returned sort.
-  @impl true
-  def sort_by(query, [field | more_sorts]) when is_atom(field) or is_tuple(field) do
-    field |> debug("SORT_BY FIELD")
-    query
-    |> debug("SORT_BY QUERY")
-    |> order_by(^field)
-    |> sort_by(more_sorts)
+
+  def apply_sort(query, {direction, columns}) when direction in @directions and is_list(columns) do
+    Enum.reduce(columns, query, &apply_sort(&2, {direction, &1}))
+  end
+
+  def apply_sort(_query, spec) do
+    raise ArgumentError, "invalid sort specification: #{inspect(spec)}"
   end
 end

@@ -1,5 +1,4 @@
 defmodule BoxTurtle.Runtime.Config.Helper.Test do
-  require Logger
 
   use ExUnit.Case
 
@@ -53,7 +52,7 @@ defmodule BoxTurtle.Runtime.Config.Helper.Test do
 
     test "supports type :charlist" do
       System.put_env("CHARLIST_VAR", "Mott the Hoople")
-      assert(Helper.get_env("CHARLIST_VAR", type: :charlist) == 'Mott the Hoople')
+      assert(Helper.get_env("CHARLIST_VAR", type: :charlist) == ~c"Mott the Hoople")
     end
 
     test "supports type :list" do

@@ -1,16 +1,8 @@
 defmodule BoxTurtle.Runtime.Config do
   @moduledoc """
-  Uses Config.Helper to get properly typed Elixir values.
-
-  Leverages [BradleyD's external config loader](https://github.com/bradleyd/external_config)
-
-  Add `external_config` to your list of dependencies in `mix.exs`:
-
-    ```elixir
-    def deps do
-      [{:external_config, "~> 0.1.0"}]
-    end
-    ```
+  Loads a runtime configuration script (standard `import Config` syntax, read with `Config.Reader`) into the
+  application environment. Combine with `BoxTurtle.Runtime.Config.Helper` to get properly typed values from
+  environment variables.
 
   After calling load_runtime_config(application), runtime settings will be available using Application module functions, just as
   though the values were set during compile time, although they are runtime values read from the ENV values.
@@ -72,7 +64,7 @@ defmodule BoxTurtle.Runtime.Config do
   def load_runtime_config(config_path) when is_binary(config_path) do
     config_path
     |> debug("Loading runtime config from")
-    |> ExternalConfig.read!()
+    |> Config.Reader.read!()
     |> debug("Runtime configuration")
     |> overwrite_application_settings()
   end

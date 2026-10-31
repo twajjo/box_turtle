@@ -1,73 +1,58 @@
 defmodule BoxTurtle.Common.ReturnOkOr do
   @moduledoc """
-  Recommended use:
+  Normalizes loosely-shaped results (`nil`, bare values, `:error`, `{:error, _}`) into `{:ok, value}` /
+  `{:error, reason}` tuples, plus macros that log a message together with the caller's stack trace.
 
-  import BoxTurtle.Common.ReturnOkOr
+      import BoxTurtle.Common.ReturnOkOr
 
-  Now with stack dump logging.
+      Repo.get(Post, id) |> return_ok_or(:not_found)
+      #=> {:ok, %Post{}} or {:error, :not_found}
   """
-  require Logger
 
-  # There is a secret to making Process.info(self(), :current_stacktrace) work in a macro, but I've surrendered to impatience...
-  #
-  # Requesting a stack should be macro instead of a function (don't want to pollute the stack with another function call)
-  #
-  # There should be a configuration also with enabled modules and whether warnings should be stack dumped...
-  # We need something more comprehensive than provided here anyway.
+  @doc """
+  Logs `message` at `:error` level with the current stack trace. A macro, so the trace starts at the caller.
+  """
   defmacro error_with_stack(message) do
-#    Logger.error("#{inspect(message)}")
-    # Don't want to turn this on without a means of turning it off.  Thinking of creating a stack dump a part of PipeDebug.
     quote do
-      Logger.error("#{inspect(unquote(message))}: #{Process.info(self(), :current_stacktrace) |> inspect(pretty: true, limit: :infinity)}")
+      require Logger
+      Logger.error(BoxTurtle.Common.ReturnOkOr.with_stack(unquote(message)))
     end
   end
+
+  @doc """
+  Logs `message` at `:warning` level with the current stack trace. A macro, so the trace starts at the caller.
+  """
   defmacro warn_with_stack(message) do
-#    Logger.warn("#{inspect(message)}")
-    # Don't want to turn this on without a means of turning it off.  Thinking of creating a stack dump a part of PipeDebug.
     quote do
-      Logger.warn("#{inspect(unquote(message))}: #{Process.info(self(), :current_stacktrace) |> inspect(pretty: true, limit: :infinity)}")
+      require Logger
+      Logger.warning(BoxTurtle.Common.ReturnOkOr.with_stack(unquote(message)))
     end
   end
 
-  @spec return_error(message :: any()) :: {:error, message :: any()}
-  def return_error(message) do
-    {:error, message}
+  @doc false
+  def with_stack(message) do
+    {:current_stacktrace, stack} = Process.info(self(), :current_stacktrace)
+    "#{inspect(message)}: #{inspect(stack, pretty: true, limit: :infinity)}"
   end
 
-  @spec return_ok_or(nil | any() | {:ok, any()} | {:error, any()} | :error, message :: any()) :: {:error, any()} | {:ok, any()}
-  def return_ok_or(nil, message) do
-    # This is very nice, but who the HEck called this to generate the message?  Callstack?
-    # warn_with_stack(message)
-    {:error, message}
-  end
-  def return_ok_or({:ok, _thang} = item, _message) do
-    item
-  end
-  # Start dealing with error map responses ahead of __struct__ured ones...
-  def return_ok_or({:error, _details}, message) do
-    # error_with_stack("#{inspect(message)}<==>#{inspect(details)}")
-    {:error, message}
-  end
-  def return_ok_or(:error, message) do
-    # error_with_stack(message)
-    {:error, message}
-  end
-  # Loosest lastest...
-  def return_ok_or(item, _message) do
-    {:ok, item}
-  end
+  @doc "Wraps `reason` in an error tuple."
+  @spec return_error(reason) :: {:error, reason} when reason: term()
+  def return_error(reason), do: {:error, reason}
 
-  @spec return_ok_or({:ok, any()} | {:error, any()}) :: {:error, any()} | {:ok, any()}
-  def return_ok_or({:ok, _content} = goodness) do
-    goodness
-  end
-  def return_ok_or(:error) do
-    # error_with_stack(:error)
-    :error
-  end
-  def return_ok_or({:error, _content} = error) do
-    # warn_with_stack(error)
-    error
-  end
+  @doc """
+  Returns `{:ok, value}` for a value or an `{:ok, _}` tuple, and `{:error, reason}` for `nil`, `:error` or an
+  `{:error, _}` tuple (whose own reason is replaced by `reason`).
+  """
+  @spec return_ok_or(term(), reason) :: {:ok, term()} | {:error, reason} when reason: term()
+  def return_ok_or(nil, reason), do: {:error, reason}
+  def return_ok_or({:ok, _value} = ok, _reason), do: ok
+  def return_ok_or({:error, _details}, reason), do: {:error, reason}
+  def return_ok_or(:error, reason), do: {:error, reason}
+  def return_ok_or(value, _reason), do: {:ok, value}
 
+  @doc "Passes `{:ok, _}`, `{:error, _}` and `:error` through unchanged."
+  @spec return_ok_or({:ok, term()} | {:error, term()} | :error) :: {:ok, term()} | {:error, term()} | :error
+  def return_ok_or({:ok, _content} = ok), do: ok
+  def return_ok_or({:error, _content} = error), do: error
+  def return_ok_or(:error), do: :error
 end

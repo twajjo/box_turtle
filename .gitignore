@@ -20,7 +20,14 @@ erl_crash.dump
 *.ez
 
 # Ignore package tarball (built via "mix hex.build").
-os_base-*.tar
+box_turtle-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+# Editor / language server artifacts
+/.elixir-tools/
+/.elixir_ls/
+
+# Test database
+/test/support/*.db*

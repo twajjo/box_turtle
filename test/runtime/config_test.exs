@@ -17,8 +17,7 @@ defmodule BoxTurtle.Runtime.Config.Test do
       assert(Application.get_env(:box_turtle, :test_integer_value) == 123)
       assert(Application.get_env(:box_turtle, :test_string_value) == "Original")
       assert(Application.get_env(:box_turtle, :test_atom_value) == :original)
-      IO.puts("Loading Runtime Config from #{__MODULE__}")
-      OsBase.Runtime.Config.load_runtime_config(:box_turtle)
+      BoxTurtle.Runtime.Config.load_runtime_config(:box_turtle)
       # Run time
       assert(Application.get_env(:box_turtle, :test_not_replaced) == "Still here")
       assert(Application.get_env(:box_turtle, :test_integer_value) != 123)

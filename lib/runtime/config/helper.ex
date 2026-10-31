@@ -43,11 +43,12 @@ defmodule BoxTurtle.Runtime.Config.Helper do
     custom: (tuple(): {Module, validator/2})  A module and function that takes a value and helper options for custom
       validation of the value.
     required: (boolean()), when true a value must be provided in the environment.  A nil generates an {:error, msg} result.
+    unsafe_atoms: (boolean()), :atom and :module values must name existing atoms unless this is true.  Atoms are never
+      garbage collected, so only enable it for trusted environments.
 
   """
 
   require Logger
-  require Jason
 
   use BoxTurtle.Debug.PipeDebug
 
@@ -139,10 +140,7 @@ defmodule BoxTurtle.Runtime.Config.Helper do
   end
   defp type_of(value)
        when is_atom(value) do
-    case parse(value, :module, []) |> Code.ensure_compiled() do
-      {:module, _} -> :module
-      _ -> :atom
-    end
+    if Code.ensure_loaded?(value), do: :module, else: :atom
   end
   defp type_of(value)
        when is_tuple(value) do
@@ -199,18 +197,26 @@ defmodule BoxTurtle.Runtime.Config.Helper do
     |> Enum.map(fn elem -> String.trim(elem) end)
     |> parse_subtypes(opts)
   end
-  defp parse(value, :module, _opts) do
-    case value |> to_string() |> String.split(".") |> List.first() do
-      "Elixir" -> :"#{value}"
-      _ -> :"Elixir.#{value}"
+  defp parse(value, :module, opts) do
+    case value do
+      "Elixir." <> _ -> to_atom(value, opts)
+      _ -> to_atom("Elixir." <> value, opts)
     end
   end
-  defp parse(value, :atom, _opts) do
-    value
-    |> String.to_atom()
+  defp parse(value, :atom, opts) do
+    to_atom(value, opts)
   end
   defp parse(_value, type, opts) do
     error("Unrecognized type (#{inspect(type)}), supported types: #{inspect(@valid_types)}", opts)
+  end
+
+  # Atoms are never garbage collected, so only existing atoms are accepted unless unsafe_atoms: true.
+  defp to_atom(value, %{unsafe_atoms: true}), do: String.to_atom(value)
+
+  defp to_atom(value, opts) do
+    String.to_existing_atom(value)
+  rescue
+    ArgumentError -> error("#{inspect(value)} is not an existing atom (pass unsafe_atoms: true to allow new atoms)", opts)
   end
 
   # Parse list and tuple elements
@@ -289,15 +295,13 @@ defmodule BoxTurtle.Runtime.Config.Helper do
     error("value list (#{inspect(values)}) length to " <>
       "type list (#{inspect(types)}) length mismatch in #{inspect(types)}", opts)
   end
-  defp check_type({} = value, %{subtype: subtype, type: :tuple} = opts) when subtype in @valid_subtypes do
-    value
-    |> Tuple.to_list
-    |> check_type(opts)
-  end
-  defp check_type({} = value, %{subtype: {} = match, type: :tuple} = opts) do
-    value
-    |> Tuple.to_list
-    |> check_type(%{opts | subtype: match |> Tuple.to_list()})
+  defp check_type(value, %{subtype: subtypes, type: :tuple} = opts) when is_tuple(value) do
+    subtypes = if is_tuple(subtypes), do: Tuple.to_list(subtypes), else: subtypes
+
+    case value |> Tuple.to_list() |> check_type(%{opts | subtype: subtypes}) do
+      list when is_list(list) -> List.to_tuple(list)
+      error -> error
+    end
   end
   defp check_type(value, %{type: type} = opts) when type in @valid_types do
     value |> debug("Validating type of")

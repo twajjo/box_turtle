@@ -1,9 +1,8 @@
-defmodule OsBase.Runtime.Application.Helper.Test do
-  require Logger
+defmodule BoxTurtle.Runtime.Application.Helper.Test do
 
   use ExUnit.Case
 
-  import OsBase.Runtime.Application.Helper
+  import BoxTurtle.Runtime.Application.Helper
 
   describe "conditional_append/3" do
     test "appends new children if the condition validates to true" do
