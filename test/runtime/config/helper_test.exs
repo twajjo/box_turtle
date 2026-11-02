@@ -89,6 +89,18 @@ defmodule BoxTurtle.Runtime.Config.Helper.Test do
       assert(Helper.get_env("TUPLE_VAR", type: :tuple, subtype: :integer) == {1, 2, 3})
     end
 
+    test "supports type :map from a JSON object" do
+      System.put_env("MAP_VAR", ~s({"pool": 10, "hosts": ["a", "b"]}))
+      assert Helper.get_env("MAP_VAR", type: :map) == %{"pool" => 10, "hosts" => ["a", "b"]}
+    end
+
+    test "rejects :map values that are not a JSON object" do
+      System.put_env("MAP_VAR", "[1, 2]")
+      assert {:error, _} = Helper.get_env("MAP_VAR", type: :map)
+      System.put_env("MAP_VAR", "{nope")
+      assert {:error, _} = Helper.get_env("MAP_VAR", type: :map)
+    end
+
     test "supports default values for unset variables" do
       System.delete_env("INTEGER_VAR")
       System.delete_env("FLOAT_VAR")

@@ -19,7 +19,7 @@ defmodule BoxTurtle.Runtime.Config.Helper do
       :string - The env variable is left as a raw string (elixir binary()).
       :list - The env variable is interpreted as a comma-separated list of values of the specified subtype (default: :string)
       :tuple - The env variable is interpreted as a comma-separated tuple of values of the specified subtype (default: :string)
-      :map - The env variable is treated as a JSON string to interpret into a map() type.
+      :map - The env variable is decoded as a JSON object (with `JSON.decode/1`) into a map with string keys.
     subtype: For lists and tuples, a subtype may be specified indicating the type(s) of elements they are expected to contain.
       :atom - the resulting list/tuple will be a set of atoms.
       :boolean - the resulting list/tuple will be a set of boolean values.
@@ -52,7 +52,6 @@ defmodule BoxTurtle.Runtime.Config.Helper do
 
   use BoxTurtle.Debug.PipeDebug
 
-  # TODO: New type candidates: :existing_atom? :map from JSON?
   @valid_types [
     :atom,
     :boolean,
@@ -93,7 +92,12 @@ defmodule BoxTurtle.Runtime.Config.Helper do
   @system_module Application.compile_env(:box_turtle, :helper_system, Wrapper)
 
   @doc """
+  Reads the environment variable `var_name`, parses it into the requested type and validates it.
 
+  Returns the parsed value, the `:default` (or `nil`) when the variable is unset, or
+  `{:error, message}` when parsing or validation fails. See the module documentation for the options.
+
+      Helper.get_env("POOL_SIZE", type: :integer, default: 10, in_range: 1..100)
   """
   @spec get_env(binary(), keyword()) :: {:error, binary()} | any()
   def get_env(var_name, opts \\ []) when is_binary(var_name) do
@@ -157,6 +161,8 @@ defmodule BoxTurtle.Runtime.Config.Helper do
        when is_list(value) do
     :list
   end
+
+  defp type_of(value) when is_map(value), do: :map
 
   defp type_of(_value) do
     nil
@@ -223,6 +229,14 @@ defmodule BoxTurtle.Runtime.Config.Helper do
 
   defp parse(value, :atom, opts) do
     to_atom(value, opts)
+  end
+
+  defp parse(value, :map, opts) do
+    case JSON.decode(value) do
+      {:ok, map} when is_map(map) -> map
+      {:ok, other} -> error("Expected a JSON object, got: #{inspect(other)}", opts)
+      {:error, reason} -> error("Invalid JSON (#{inspect(reason)}): #{inspect(value)}", opts)
+    end
   end
 
   defp parse(_value, type, opts) do
