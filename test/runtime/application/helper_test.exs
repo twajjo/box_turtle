@@ -3,6 +3,8 @@ defmodule BoxTurtle.Runtime.Application.Helper.Test do
 
   import BoxTurtle.Runtime.Application.Helper
 
+  doctest BoxTurtle.Runtime.Application.Helper
+
   describe "conditional_append/3" do
     test "appends new children if the condition validates to true" do
       assert(

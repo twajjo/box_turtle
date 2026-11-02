@@ -1,46 +1,59 @@
 defmodule BoxTurtle.Security.Password do
   @moduledoc """
-    Generates a random password with at minimum one upper case, one lower case, one digit and one special character.
+  Generates random passwords containing at least one lowercase letter, one uppercase letter,
+  one digit and one special character.
 
-    Slightly modified code blatantly stolen from [here](https://rosettacode.org/wiki/Password_generator#Elixir)
+  All randomness comes from `:crypto.strong_rand_bytes/1` (through `:crypto.rand_seed_s/0`),
+  so the passwords are suitable for credentials. The caller's `:rand` seed is not touched.
+
+  The approach is inspired by the Rosetta Code
+  [Password generator](https://rosettacode.org/wiki/Password_generator) task.
   """
+
   @min_length 8
-  @lower Enum.map(?a..?z, &to_string([&1]))
-  @upper Enum.map(?A..?Z, &to_string([&1]))
-  @digit Enum.map(?0..?9, &to_string([&1]))
-  @other ~S"""
-         !"#$%&'()*+,-./:;<=>?@[]^_{|}~
-         """
-         |> String.codepoints()
-         |> List.delete_at(-1)
+  @lower Enum.map(?a..?z, &<<&1>>)
+  @upper Enum.map(?A..?Z, &<<&1>>)
+  @digit Enum.map(?0..?9, &<<&1>>)
+  @other String.codepoints("!\"#$%&'()*+,-./:;<=>?@[]^_{|}~")
   @all @lower ++ @upper ++ @digit ++ @other
 
   @doc """
-    Generate a random password string containing 1 or more uppercase, lowercase, digit and special characters of
-    the specified length.
-
-    # Parameters
-
-      length - the number of characters in the generated password.  Passwords of less than 4 characters are not
-        allowed.
-
-    # Returns
-
-      {:ok, password} - if the proper length is provided.
-      {:error, reason} - if the password cannot be generated.
+  Returns the minimum password length accepted by `generate/1` (#{@min_length}).
   """
-  @spec generate(integer()) :: {:error, binary()} | {:ok, binary()}
+  @spec min_length() :: pos_integer()
+  def min_length, do: @min_length
+
+  @doc """
+  Generates a random password of `length` characters (default #{@min_length}).
+
+  Returns `{:ok, password}`, or `{:error, :too_short}` when `length` is not an integer of at
+  least #{@min_length}.
+  """
+  @spec generate(integer()) :: {:ok, String.t()} | {:error, :too_short}
   def generate(length \\ @min_length)
 
-  def generate(length) when length >= @min_length do
-    pswd = [Enum.random(@lower), Enum.random(@upper), Enum.random(@digit), Enum.random(@other)]
-    {:ok, generator(length - @min_length, pswd)}
+  def generate(length) when is_integer(length) and length >= @min_length do
+    state = :crypto.rand_seed_s()
+    {required, state} = Enum.map_reduce([@lower, @upper, @digit, @other], state, &pick/2)
+    {rest, state} = Enum.map_reduce(1..(length - 4)//1, state, fn _, st -> pick(@all, st) end)
+    {password, _state} = shuffle(required ++ rest, state)
+    {:ok, Enum.join(password)}
   end
 
-  def generate(_bad_len) do
-    {:error, "Passwords cannot be less than #{@min_length} characters in length"}
+  def generate(_length), do: {:error, :too_short}
+
+  defp pick(chars, state) do
+    {index, state} = :rand.uniform_s(length(chars), state)
+    {Enum.at(chars, index - 1), state}
   end
 
-  defp generator(0, pswd), do: Enum.shuffle(pswd) |> Enum.join()
-  defp generator(len, pswd), do: generator(len - 1, [Enum.random(@all) | pswd])
+  defp shuffle(chars, state) do
+    {keyed, state} = Enum.map_reduce(chars, state, fn char, st -> with_key(char, st) end)
+    {keyed |> Enum.sort() |> Enum.map(&elem(&1, 1)), state}
+  end
+
+  defp with_key(char, state) do
+    {key, state} = :rand.uniform_s(state)
+    {{key, char}, state}
+  end
 end
