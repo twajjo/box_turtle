@@ -78,7 +78,10 @@ defmodule BoxTurtle.Schema.Query do
         page_size: BoxTurtle.Schema.Pagination.default_page_size()
       ])
 
-    repo = options[:repo] || raise ArgumentError, "use BoxTurtle.Schema.Query requires the :repo option"
+    repo =
+      options[:repo] ||
+        raise ArgumentError, "use BoxTurtle.Schema.Query requires the :repo option"
+
     primary_key = options[:primary_key]
 
     settings = [
@@ -256,10 +259,12 @@ defmodule BoxTurtle.Schema.Query do
   defp normalize_delegate({delegate, {:%, _, [pattern, {:%{}, _, _}]}}, env),
     do: {expand(delegate, env), expand(pattern, env)}
 
-  defp normalize_delegate({delegate, pattern}, env), do: {expand(delegate, env), expand(pattern, env)}
+  defp normalize_delegate({delegate, pattern}, env),
+    do: {expand(delegate, env), expand(pattern, env)}
 
   defp normalize_delegate(other, _env) do
-    raise ArgumentError, "invalid Query delegate #{Macro.to_string(other)}, expected {DelegateModule, %Pattern{}}"
+    raise ArgumentError,
+          "invalid Query delegate #{Macro.to_string(other)}, expected {DelegateModule, %Pattern{}}"
   end
 
   defp expand(ast, env), do: Macro.expand(ast, env)

@@ -1,5 +1,4 @@
 defmodule BoxTurtle.Runtime.Config.Helper.Test do
-
   use ExUnit.Case
 
   alias BoxTurtle.Runtime.Config.Helper
@@ -74,7 +73,10 @@ defmodule BoxTurtle.Runtime.Config.Helper.Test do
     test "supports type :tuple" do
       System.put_env("TUPLE_VAR", "fish,cut,bait")
       assert(Helper.get_env("TUPLE_VAR", type: :tuple) == {"fish", "cut", "bait"})
-      assert(Helper.get_env("TUPLE_VAR", type: :tuple, subtype: :string) == {"fish", "cut", "bait"})
+
+      assert(
+        Helper.get_env("TUPLE_VAR", type: :tuple, subtype: :string) == {"fish", "cut", "bait"}
+      )
     end
 
     test "supports type :tuple of all :atom entries" do
@@ -100,10 +102,23 @@ defmodule BoxTurtle.Runtime.Config.Helper.Test do
       assert(Helper.get_env("FLOAT_VAR", default: 98.6, type: :float) == 98.6)
       assert(Helper.get_env("BOOLEAN_VAR", default: true, type: :boolean) == true)
       assert(Helper.get_env("ATOM_VAR", default: :ant, type: :atom) == :ant)
-      assert(Helper.get_env("MODULE_VAR", default: BoxTurtle.Runtime.Config, type: :module) == BoxTurtle.Runtime.Config)
+
+      assert(
+        Helper.get_env("MODULE_VAR", default: BoxTurtle.Runtime.Config, type: :module) ==
+          BoxTurtle.Runtime.Config
+      )
+
       assert(Helper.get_env("STRING_VAR", default: "narf", type: :string) == "narf")
-      assert(Helper.get_env("LIST_VAR", default: ~w(winkin blinkin nod), type: :list) == ~w(winkin blinkin nod))
-      assert(Helper.get_env("TUPLE_VAR", default: {"winkin", "blinkin", "nod"}, type: :tuple) == {"winkin", "blinkin", "nod"})
+
+      assert(
+        Helper.get_env("LIST_VAR", default: ~w(winkin blinkin nod), type: :list) ==
+          ~w(winkin blinkin nod)
+      )
+
+      assert(
+        Helper.get_env("TUPLE_VAR", default: {"winkin", "blinkin", "nod"}, type: :tuple) ==
+          {"winkin", "blinkin", "nod"}
+      )
     end
 
     test "supports validation :in_set" do
@@ -127,7 +142,10 @@ defmodule BoxTurtle.Runtime.Config.Helper.Test do
     test "supports validation :regex" do
       System.put_env("STRING_VAR", "string_val")
       assert(Helper.get_env("STRING_VAR", type: :string, regex: ~r/^.*_val$/) == "string_val")
-      assert({:error, _} = Helper.get_env("STRING_VAR", type: :string, regex: ~r/^.*_flurshinger$/))
+
+      assert(
+        {:error, _} = Helper.get_env("STRING_VAR", type: :string, regex: ~r/^.*_flurshinger$/)
+      )
     end
 
     test "supports custom validation" do
@@ -141,5 +159,4 @@ defmodule BoxTurtle.Runtime.Config.Helper.Test do
       assert(is_nil(Helper.get_env("UNDEFINED_VAR")))
     end
   end
-
 end

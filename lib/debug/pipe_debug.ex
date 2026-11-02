@@ -31,7 +31,8 @@ defmodule BoxTurtle.Debug.PipeDebug do
     logger_macro = Keyword.get(options, :logger_macro, :debug)
 
     if logger_macro not in [:debug, :info] do
-      raise ArgumentError, "PipeDebug :logger_macro must be :debug or :info, got: #{inspect(logger_macro)}"
+      raise ArgumentError,
+            "PipeDebug :logger_macro must be :debug or :info, got: #{inspect(logger_macro)}"
     end
 
     quote location: :keep do
@@ -79,7 +80,9 @@ defmodule BoxTurtle.Debug.PipeDebug do
         defp module_debugging?, do: __MODULE__ in module_mask()
 
         defp condition_met?(nil, _val), do: true
-        defp condition_met?(condition, val) when is_function(condition, 1), do: condition.(val) == true
+
+        defp condition_met?(condition, val) when is_function(condition, 1),
+          do: condition.(val) == true
 
         defp pipe_debug_application do
           unquote(application) || Application.get_application(__MODULE__) || :box_turtle
@@ -90,10 +93,14 @@ defmodule BoxTurtle.Debug.PipeDebug do
         end
 
         defp format_inspection(val, nil), do: inspect_value(val)
-        defp format_inspection(val, message) when is_binary(message), do: "#{message}: #{inspect_value(val)}"
+
+        defp format_inspection(val, message) when is_binary(message),
+          do: "#{message}: #{inspect_value(val)}"
+
         defp format_inspection(val, message), do: format_inspection(val, inspect(message))
 
-        defp inspect_value(val), do: inspect(val, pretty: true, limit: :infinity, printable_limit: :infinity)
+        defp inspect_value(val),
+          do: inspect(val, pretty: true, limit: :infinity, printable_limit: :infinity)
       end
     end
   end

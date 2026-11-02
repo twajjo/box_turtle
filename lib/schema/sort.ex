@@ -77,7 +77,8 @@ defmodule BoxTurtle.Schema.Sort do
     order_by(query, ^[{direction, column}])
   end
 
-  def apply_sort(query, {direction, columns}) when direction in @directions and is_list(columns) do
+  def apply_sort(query, {direction, columns})
+      when direction in @directions and is_list(columns) do
     Enum.reduce(columns, query, &apply_sort(&2, {direction, &1}))
   end
 

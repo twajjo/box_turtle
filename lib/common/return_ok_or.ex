@@ -51,7 +51,8 @@ defmodule BoxTurtle.Common.ReturnOkOr do
   def return_ok_or(value, _reason), do: {:ok, value}
 
   @doc "Passes `{:ok, _}`, `{:error, _}` and `:error` through unchanged."
-  @spec return_ok_or({:ok, term()} | {:error, term()} | :error) :: {:ok, term()} | {:error, term()} | :error
+  @spec return_ok_or({:ok, term()} | {:error, term()} | :error) ::
+          {:ok, term()} | {:error, term()} | :error
   def return_ok_or({:ok, _content} = ok), do: ok
   def return_ok_or({:error, _content} = error), do: error
   def return_ok_or(:error), do: :error

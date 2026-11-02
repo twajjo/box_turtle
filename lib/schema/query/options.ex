@@ -15,7 +15,8 @@ defmodule BoxTurtle.Schema.Query.Options do
 
         quote do
           @impl BoxTurtle.Schema.Query.Options.API
-          def unquote(setting)(opts \\ []), do: Keyword.get(opts, unquote(setting), unquote(default))
+          def unquote(setting)(opts \\ []),
+            do: Keyword.get(opts, unquote(setting), unquote(default))
         end
       end
 

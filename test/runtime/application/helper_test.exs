@@ -1,5 +1,4 @@
 defmodule BoxTurtle.Runtime.Application.Helper.Test do
-
   use ExUnit.Case
 
   import BoxTurtle.Runtime.Application.Helper
@@ -18,12 +17,14 @@ defmodule BoxTurtle.Runtime.Application.Helper.Test do
         |> conditional_append(2 > 1, :new_kids) == [:old_kids, :new_kids]
       )
     end
+
     test "does not append new children if the condition validates to false" do
       assert(
         [:old_kids]
         |> conditional_append(2 < 1, [:new_kids]) == [:old_kids]
       )
     end
+
     test "does not append new child if the condition validates to false" do
       assert(
         [:old_kids]
@@ -38,6 +39,7 @@ defmodule BoxTurtle.Runtime.Application.Helper.Test do
         [:old_kids]
         |> conditional_append(fn a, b -> a < b end, [:new_kids], [2, 1]) == [:old_kids]
       )
+
       assert(
         [:old_kids]
         |> conditional_append(fn a, b -> a < b end, :new_kids, [2, 1]) == [:old_kids]
@@ -49,6 +51,7 @@ defmodule BoxTurtle.Runtime.Application.Helper.Test do
         [:old_kids]
         |> conditional_append(fn -> true end, [:new_kids]) == [:old_kids, :new_kids]
       )
+
       assert(
         [:old_kids]
         |> conditional_append(fn -> true end, :new_kids) == [:old_kids, :new_kids]
@@ -60,6 +63,7 @@ defmodule BoxTurtle.Runtime.Application.Helper.Test do
         [:old_kids]
         |> conditional_append(fn -> true end, [:new_kids]) == [:old_kids, :new_kids]
       )
+
       assert(
         [:old_kids]
         |> conditional_append(fn -> true end, :new_kids) == [:old_kids, :new_kids]
@@ -71,6 +75,7 @@ defmodule BoxTurtle.Runtime.Application.Helper.Test do
         [:old_kids]
         |> conditional_append(fn -> false end, [:new_kids]) == [:old_kids]
       )
+
       assert(
         [:old_kids]
         |> conditional_append(fn -> false end, :new_kids) == [:old_kids]

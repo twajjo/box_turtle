@@ -31,7 +31,9 @@ defmodule BoxTurtle.Schema.QueryTest do
       post = post_fixture(%{author_id: author.id, status: "published"})
 
       assert Post.Query.get!(post.id, filters: [status: "draft"]) == nil
-      assert %Post{author: %Author{name: "Ursula"}} = Post.Query.get!(post.id, preloads: [:author])
+
+      assert %Post{author: %Author{name: "Ursula"}} =
+               Post.Query.get!(post.id, preloads: [:author])
     end
 
     test "works with KSUID keys" do
@@ -42,7 +44,11 @@ defmodule BoxTurtle.Schema.QueryTest do
 
   describe "list!/1" do
     setup do
-      for {title, status, likes} <- [{"a", "draft", 5}, {"b", "published", 1}, {"c", "published", 9}] do
+      for {title, status, likes} <- [
+            {"a", "draft", 5},
+            {"b", "published", 1},
+            {"c", "published", 9}
+          ] do
         post_fixture(%{title: title, status: status, likes: likes})
       end
 

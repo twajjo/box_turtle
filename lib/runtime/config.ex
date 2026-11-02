@@ -56,11 +56,13 @@ defmodule BoxTurtle.Runtime.Config do
   """
   @spec load_runtime_config(atom() | String.t()) :: :ok
   def load_runtime_config(nil), do: :ok
+
   def load_runtime_config(application) when is_atom(application) do
     config_path(application)
     |> debug("Config path")
     |> load_runtime_config()
   end
+
   def load_runtime_config(config_path) when is_binary(config_path) do
     config_path
     |> debug("Loading runtime config from")
@@ -72,14 +74,19 @@ defmodule BoxTurtle.Runtime.Config do
   defp overwrite_application_settings([]) do
     :ok
   end
+
   defp overwrite_application_settings([{application, settings} | app_settings]) do
     # Only replace compile-time Application config with non-nil values.
     settings
-    |> Enum.each(fn {key, value} -> is_nil(value) || Application.put_env(application, key, value) end)
+    |> Enum.each(fn {key, value} ->
+      is_nil(value) || Application.put_env(application, key, value)
+    end)
+
     overwrite_application_settings(app_settings)
   end
 
   defp config_path(nil), do: nil
+
   defp config_path(application) when is_atom(application) do
     # Support both absolute and relative paths in the configuration.
     Application.get_env(application, @config_runtime_var_name, nil)
@@ -87,7 +94,10 @@ defmodule BoxTurtle.Runtime.Config do
     |> config_path()
     |> debug("Path expanded to")
   end
-  defp config_path(config_file) when is_binary(config_file) and binary_part(config_file, 0, 1) == "/", do: config_file
+
+  defp config_path(config_file)
+       when is_binary(config_file) and binary_part(config_file, 0, 1) == "/", do: config_file
+
   defp config_path(config_file) when is_binary(config_file) do
     File.cwd!()
     |> debug("Current Working Directory")
@@ -95,6 +105,6 @@ defmodule BoxTurtle.Runtime.Config do
     |> Path.expand()
     |> debug("#{config_file} full path")
   end
-  defp config_path(_), do: nil
 
+  defp config_path(_), do: nil
 end

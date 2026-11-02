@@ -39,12 +39,17 @@ defmodule BoxTurtle.Schema.ChangeTest do
       post = post_fixture()
       assert {:error, changeset} = Post.Change.update(post, %{status: "bogus"})
       assert %{status: ["is invalid"]} = errors_on(changeset)
-      assert_raise Ecto.InvalidChangesetError, fn -> Post.Change.update!(post, %{status: "bogus"}) end
+
+      assert_raise Ecto.InvalidChangesetError, fn ->
+        Post.Change.update!(post, %{status: "bogus"})
+      end
     end
 
     test "update/1 takes a changeset" do
       post = post_fixture()
-      assert {:ok, %Post{likes: 3}} = post |> Ecto.Changeset.change(likes: 3) |> Post.Change.update()
+
+      assert {:ok, %Post{likes: 3}} =
+               post |> Ecto.Changeset.change(likes: 3) |> Post.Change.update()
     end
   end
 

@@ -3,8 +3,8 @@ defmodule BoxTurtle.Test.Author do
   import Ecto.Changeset
 
   schema "authors" do
-    field :name, :string
-    has_many :posts, BoxTurtle.Test.Post
+    field(:name, :string)
+    has_many(:posts, BoxTurtle.Test.Post)
     timestamps(type: :utc_datetime)
   end
 
@@ -20,10 +20,10 @@ defmodule BoxTurtle.Test.Post do
   import Ecto.Changeset
 
   schema "posts" do
-    field :title, :string
-    field :status, :string, default: "draft"
-    field :likes, :integer, default: 0
-    belongs_to :author, BoxTurtle.Test.Author
+    field(:title, :string)
+    field(:status, :string, default: "draft")
+    field(:likes, :integer, default: 0)
+    belongs_to(:author, BoxTurtle.Test.Author)
     timestamps(type: :utc_datetime)
   end
 
@@ -47,7 +47,7 @@ defmodule BoxTurtle.Test.Tag do
 
   @primary_key {:id, BoxTurtle.Schema.Ecto.Ksuid, autogenerate: true}
   schema "tags" do
-    field :name, :string
+    field(:name, :string)
   end
 
   def changeset(tag, attrs) do
@@ -89,7 +89,8 @@ defmodule BoxTurtle.Test.ByAuthor do
   end
 
   extend :count_by do
-    def count_by(%BoxTurtle.Test.Author{id: id}, opts), do: count(add_filters(opts, author_id: id))
+    def count_by(%BoxTurtle.Test.Author{id: id}, opts),
+      do: count(add_filters(opts, author_id: id))
   end
 end
 
@@ -102,7 +103,7 @@ defmodule BoxTurtle.Test.Post.Query do
     page_size: 2,
     delegates: [{BoxTurtle.Test.ByAuthor, %BoxTurtle.Test.Author{}}]
 
-  delegate [:list_by, :count_by]
+  delegate([:list_by, :count_by])
 
   extend :get_by! do
     def get_by!(title, opts) when is_binary(title), do: get!(%{title: title}, opts)

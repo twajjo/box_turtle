@@ -46,7 +46,11 @@ defmodule BoxTurtle.Schema.Query.Helpers do
   """
   @spec get_opt(keyword(), atom(), any(), any()) :: any()
   def get_opt(opts, option, module_default, no_default_value) when option in @option_keys do
-    Keyword.get(opts, option, if(ignore_defaults?(opts), do: no_default_value, else: module_default))
+    Keyword.get(
+      opts,
+      option,
+      if(ignore_defaults?(opts), do: no_default_value, else: module_default)
+    )
   end
 
   @doc "The `:group_by` columns."
@@ -59,7 +63,8 @@ defmodule BoxTurtle.Schema.Query.Helpers do
 
   @doc "The associations to preload."
   @spec joining(list(), keyword()) :: list()
-  def joining(default_preloads, opts), do: opts |> get_opt(:preloads, default_preloads, []) |> List.wrap()
+  def joining(default_preloads, opts),
+    do: opts |> get_opt(:preloads, default_preloads, []) |> List.wrap()
 
   @doc "The `:distinct` columns for list queries."
   @spec query_distinction(keyword(), list()) :: list()
@@ -93,7 +98,8 @@ defmodule BoxTurtle.Schema.Query.Helpers do
   Runs an aggregate query: a single integer without grouping, otherwise a list of maps holding the grouped
   columns and `:count`.
   """
-  @spec aggregate_result!(Ecto.Queryable.t(), :count, [atom()], module(), keyword()) :: integer() | [map()]
+  @spec aggregate_result!(Ecto.Queryable.t(), :count, [atom()], module(), keyword()) ::
+          integer() | [map()]
   def aggregate_result!(query, :count, [], repo, _opts) do
     case repo.one(query) do
       %{count: count} -> count
@@ -101,7 +107,8 @@ defmodule BoxTurtle.Schema.Query.Helpers do
     end
   end
 
-  def aggregate_result!(query, :count, grouping, repo, _opts) when is_list(grouping), do: repo.all(query)
+  def aggregate_result!(query, :count, grouping, repo, _opts) when is_list(grouping),
+    do: repo.all(query)
 
   @doc false
   @spec aggregate_select(Ecto.Queryable.t(), nil | [atom()], keyword()) :: Ecto.Query.t()
@@ -127,7 +134,8 @@ defmodule BoxTurtle.Schema.Query.Helpers do
   def aggregate_unique(query, _), do: select(query, [q], %{count: count()})
 
   @doc "Applies sorting and pagination."
-  @spec build_listings!(Ecto.Queryable.t(), module(), list(), keyword(), pos_integer()) :: Ecto.Queryable.t()
+  @spec build_listings!(Ecto.Queryable.t(), module(), list(), keyword(), pos_integer()) ::
+          Ecto.Queryable.t()
   def build_listings!(query, sorting_module, default_sort, opts, page_size \\ default_page_size()) do
     query
     |> sorting_module.sort_by(sorting(default_sort, opts))
@@ -143,12 +151,15 @@ defmodule BoxTurtle.Schema.Query.Helpers do
   end
 
   @doc "Adds `group_by` clauses. String column names must already exist as atoms."
-  @spec group(Ecto.Queryable.t(), nil | atom() | String.t() | [atom() | String.t()]) :: Ecto.Queryable.t()
+  @spec group(Ecto.Queryable.t(), nil | atom() | String.t() | [atom() | String.t()]) ::
+          Ecto.Queryable.t()
   def group(query, nil), do: query
   def group(query, []), do: query
   def group(query, [column | columns]), do: query |> group(column) |> group(columns)
   def group(query, column) when is_atom(column), do: group_by(query, [q], field(q, ^column))
-  def group(query, column) when is_binary(column), do: group(query, String.to_existing_atom(column))
+
+  def group(query, column) when is_binary(column),
+    do: group(query, String.to_existing_atom(column))
 
   @doc "Adds preloads, dropping duplicates."
   @spec preloads(Ecto.Queryable.t(), nil | atom() | list()) :: Ecto.Queryable.t()
@@ -169,7 +180,9 @@ defmodule BoxTurtle.Schema.Query.Helpers do
   column values for composite keys.
   """
   @spec where_key(Ecto.Queryable.t(), term(), atom()) :: Ecto.Query.t()
-  def where_key(query, %{} = key, _primary_key) when not is_struct(key), do: where(query, ^Enum.to_list(key))
+  def where_key(query, %{} = key, _primary_key) when not is_struct(key),
+    do: where(query, ^Enum.to_list(key))
+
   def where_key(query, [{_, _} | _] = key, _primary_key), do: where(query, ^key)
   def where_key(query, key, primary_key), do: where(query, ^[{primary_key, key}])
 end

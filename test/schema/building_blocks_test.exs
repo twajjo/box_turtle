@@ -39,7 +39,9 @@ defmodule BoxTurtle.Schema.BuildingBlocksTest do
     end
 
     test "limit and offset" do
-      %Ecto.Query{limit: limit, offset: offset} = Pagination.page(from(p in Post), [number: 3, size: 10])
+      %Ecto.Query{limit: limit, offset: offset} =
+        Pagination.page(from(p in Post), number: 3, size: 10)
+
       assert limit.params == [{10, :integer}]
       assert offset.params == [{20, :integer}]
     end

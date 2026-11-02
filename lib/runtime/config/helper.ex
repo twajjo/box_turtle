@@ -89,6 +89,7 @@ defmodule BoxTurtle.Runtime.Config.Helper do
       System.get_env(varname, default)
     end
   end
+
   @system_module Application.compile_env(:box_turtle, :helper_system, Wrapper)
 
   @doc """
@@ -126,30 +127,37 @@ defmodule BoxTurtle.Runtime.Config.Helper do
   defp type_of(nil) do
     nil
   end
+
   defp type_of(value)
        when is_boolean(value) do
     :boolean
   end
+
   defp type_of(value)
        when is_integer(value) do
     :integer
   end
+
   defp type_of(value)
        when is_float(value) do
     :float
   end
+
   defp type_of(value)
        when is_atom(value) do
     if Code.ensure_loaded?(value), do: :module, else: :atom
   end
+
   defp type_of(value)
        when is_tuple(value) do
     :tuple
   end
+
   defp type_of(value)
        when is_list(value) do
     :list
   end
+
   defp type_of(_value) do
     nil
   end
@@ -163,49 +171,60 @@ defmodule BoxTurtle.Runtime.Config.Helper do
   defp parse(nil, _type, %{default: default} = _opts) do
     default
   end
+
   defp parse(value, nil, opts) do
     parse(value, :string, opts)
   end
+
   defp parse(value, :string, _opts) do
     value
   end
+
   defp parse(value, :charlist, _opts) do
     value |> String.to_charlist()
   end
+
   defp parse(value, :boolean, opts) do
     value
     |> String.downcase()
     |> String.to_existing_atom()
     |> validity_check(Map.put_new(opts, :in_set, [true, false]))
   end
+
   defp parse(value, :integer, _opts) do
     value
     |> String.to_integer()
   end
+
   defp parse(value, :float, _opts) do
     value
     |> String.to_float()
   end
+
   defp parse(value, :tuple, opts) do
     value
     |> parse(:list, opts)
     |> List.to_tuple()
   end
+
   defp parse(value, :list, opts) do
     value
     |> String.split(",")
     |> Enum.map(fn elem -> String.trim(elem) end)
     |> parse_subtypes(opts)
   end
+
   defp parse(value, :module, opts) do
     case value do
       "Elixir." <> _ -> to_atom(value, opts)
       _ -> to_atom("Elixir." <> value, opts)
     end
   end
+
   defp parse(value, :atom, opts) do
     to_atom(value, opts)
   end
+
   defp parse(_value, type, opts) do
     error("Unrecognized type (#{inspect(type)}), supported types: #{inspect(@valid_types)}", opts)
   end
@@ -216,7 +235,11 @@ defmodule BoxTurtle.Runtime.Config.Helper do
   defp to_atom(value, opts) do
     String.to_existing_atom(value)
   rescue
-    ArgumentError -> error("#{inspect(value)} is not an existing atom (pass unsafe_atoms: true to allow new atoms)", opts)
+    ArgumentError ->
+      error(
+        "#{inspect(value)} is not an existing atom (pass unsafe_atoms: true to allow new atoms)",
+        opts
+      )
   end
 
   # Parse list and tuple elements
@@ -224,22 +247,32 @@ defmodule BoxTurtle.Runtime.Config.Helper do
   defp parse_subtypes(list, opts) do
     parse_subtypes(list, Map.put_new(opts, :subtype, :string), [])
   end
+
   defp parse_subtypes([], %{}, acc) do
     Enum.reverse(acc)
   end
-  defp parse_subtypes(values, %{subtype: subtype} = opts, acc) when subtype in @valid_subtypes and is_list(values) do
+
+  defp parse_subtypes(values, %{subtype: subtype} = opts, acc)
+       when subtype in @valid_subtypes and is_list(values) do
     parse_subtypes(values, %{opts | subtype: List.duplicate(subtype, length(values))}, acc)
   end
+
   defp parse_subtypes(values, %{subtype: subtypes} = opts, acc) when is_tuple(subtypes) do
     parse_subtypes(values, %{opts | subtype: Tuple.to_list(subtypes)}, acc)
   end
+
   defp parse_subtypes([hv | tv] = values, %{subtype: [hs | ts] = subtypes} = opts, acc)
-  when length(values) == length(subtypes) do
+       when length(values) == length(subtypes) do
     parse_subtypes(tv, %{opts | subtype: ts}, [parse(hv, hs, %{opts | type: hs})] ++ acc)
   end
-  defp parse_subtypes(values, %{subtype: subtypes} = opts, _acc) when is_list(subtypes) and is_list(values) do
-    error("value list (#{inspect(values)}) length #{length(values)} to " <>
-      "type list (#{inspect(subtypes)}) length #{length(subtypes)}", opts)
+
+  defp parse_subtypes(values, %{subtype: subtypes} = opts, _acc)
+       when is_list(subtypes) and is_list(values) do
+    error(
+      "value list (#{inspect(values)}) length #{length(values)} to " <>
+        "type list (#{inspect(subtypes)}) length #{length(subtypes)}",
+      opts
+    )
   end
 
   # Second, run built-in validators [:in_set, :in_range, :regex] and customs...
@@ -258,9 +291,11 @@ defmodule BoxTurtle.Runtime.Config.Helper do
   defp check_required(nil, %{required: true} = opts) do
     error("value is required and no default was provided", opts)
   end
+
   defp check_required({:error, _} = error, _opts) do
     error
   end
+
   defp check_required(value, _opts) do
     value
   end
@@ -269,19 +304,26 @@ defmodule BoxTurtle.Runtime.Config.Helper do
   defp check_type(nil, _opts) do
     nil
   end
+
   defp check_type({:error, _} = error, _opts) do
     error
   end
+
   defp check_type([], _opts) do
     []
   end
-  defp check_type(list, %{subtype: subtype} = opts) when is_list(list) and subtype in @valid_subtypes do
+
+  defp check_type(list, %{subtype: subtype} = opts)
+       when is_list(list) and subtype in @valid_subtypes do
     check_type(list, %{opts | subtype: List.duplicate(subtype, length(list))})
   end
-  defp check_type([hv|tv], %{subtype: [hs|ts], type: type} = opts) when length(ts) == length(tv) do
+
+  defp check_type([hv | tv], %{subtype: [hs | ts], type: type} = opts)
+       when length(ts) == length(tv) do
     hv |> debug("Type of")
     type_of(hv) |> debug("Is type")
     hs |> debug("Expected")
+
     if safe_type_of(hv) == hs do
       case check_type(tv, %{opts | subtype: ts}) do
         list when is_list(list) -> [hv] ++ list
@@ -291,10 +333,15 @@ defmodule BoxTurtle.Runtime.Config.Helper do
       error("value (#{inspect(hv)}) subtype (#{inspect(hs)}) mismatch in #{inspect(type)}", opts)
     end
   end
+
   defp check_type(values, %{subtype: types} = opts) when length(types) != length(values) do
-    error("value list (#{inspect(values)}) length to " <>
-      "type list (#{inspect(types)}) length mismatch in #{inspect(types)}", opts)
+    error(
+      "value list (#{inspect(values)}) length to " <>
+        "type list (#{inspect(types)}) length mismatch in #{inspect(types)}",
+      opts
+    )
   end
+
   defp check_type(value, %{subtype: subtypes, type: :tuple} = opts) when is_tuple(value) do
     subtypes = if is_tuple(subtypes), do: Tuple.to_list(subtypes), else: subtypes
 
@@ -303,15 +350,21 @@ defmodule BoxTurtle.Runtime.Config.Helper do
       error -> error
     end
   end
+
   defp check_type(value, %{type: type} = opts) when type in @valid_types do
     value |> debug("Validating type of")
     checked_type = safe_type_of(value)
+
     if checked_type == type || (checked_type == :list && type == :charlist) do
       value
     else
-      error("value (#{inspect(value)}) type (#{inspect(checked_type)}) is not type specified (#{inspect(type)})", opts)
+      error(
+        "value (#{inspect(value)}) type (#{inspect(checked_type)}) is not type specified (#{inspect(type)})",
+        opts
+      )
     end
   end
+
   defp check_type(value, _opts) do
     value
   end
@@ -321,21 +374,26 @@ defmodule BoxTurtle.Runtime.Config.Helper do
   defp check_custom(nil, _opts) do
     nil
   end
+
   defp check_custom({:error, _} = error, _opts) do
     error
   end
+
   defp check_custom(value, %{custom: custom_validators} = opts)
        when is_list(custom_validators) do
     iterate_customs(value, opts, custom_validators)
   end
+
   defp check_custom(value, %{custom: {module, function}} = opts)
        when is_atom(module) and
               is_atom(function) do
     {:module, module} = Code.ensure_compiled(module)
+
     ({function, 2} in module.__info__(:functions) &&
        Kernel.apply(module, function, [value, opts])) ||
-       error("custom validator module #{module} or function #{function} missing", opts)
+      error("custom validator module #{module} or function #{function} missing", opts)
   end
+
   defp check_custom(value, _opts) do
     value
   end
@@ -343,6 +401,7 @@ defmodule BoxTurtle.Runtime.Config.Helper do
   defp iterate_customs(value, _opts, []) do
     value
   end
+
   defp iterate_customs(value, opts, [custom | the_rest]) do
     value
     |> check_custom(%{opts | custom: custom})
@@ -354,6 +413,7 @@ defmodule BoxTurtle.Runtime.Config.Helper do
   defp check_set({:error, _} = error, _opts) do
     error
   end
+
   defp check_set(value, %{in_set: set} = opts) when is_list(set) do
     if Enum.member?(set, value) do
       value
@@ -361,6 +421,7 @@ defmodule BoxTurtle.Runtime.Config.Helper do
       error("value #{value} not in options #{inspect(set)}", opts)
     end
   end
+
   defp check_set(value, _opts) do
     value
   end
@@ -370,6 +431,7 @@ defmodule BoxTurtle.Runtime.Config.Helper do
   defp check_range({:error, _} = error, _opts) do
     error
   end
+
   defp check_range(value, %{in_range: range} = opts) do
     if Enum.member?(range, value) do
       value
@@ -377,6 +439,7 @@ defmodule BoxTurtle.Runtime.Config.Helper do
       error("value #{value} not in specified range #{inspect(range)}", opts)
     end
   end
+
   defp check_range(value, _opts) do
     value
   end
@@ -386,6 +449,7 @@ defmodule BoxTurtle.Runtime.Config.Helper do
   defp check_regex({:error, _} = error, _opts) do
     error
   end
+
   defp check_regex(value, %{regex: regex} = opts) do
     if Regex.match?(regex, to_string(value)) do
       value
@@ -393,6 +457,7 @@ defmodule BoxTurtle.Runtime.Config.Helper do
       error("value #{value} does not match regex #{inspect(opts[:regex])}", opts)
     end
   end
+
   defp check_regex(value, _opts) do
     value
   end

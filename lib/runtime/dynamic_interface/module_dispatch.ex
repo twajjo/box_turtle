@@ -35,7 +35,9 @@ defmodule BoxTurtle.Runtime.DynamicInterface.ModuleDispatch do
       |> Macro.expand(__CALLER__)
       |> Code.ensure_compiled!()
 
-    impl_module = opts |> Keyword.get(:impl, Module.concat(caller, Impl)) |> Macro.expand(__CALLER__)
+    impl_module =
+      opts |> Keyword.get(:impl, Module.concat(caller, Impl)) |> Macro.expand(__CALLER__)
+
     otp_app = Keyword.get(opts, :otp_app)
     stub? = Keyword.get(opts, :generate_stub, false)
 
@@ -46,13 +48,18 @@ defmodule BoxTurtle.Runtime.DynamicInterface.ModuleDispatch do
         if stub? do
           quote do
             @impl true
-            def unquote(fun)(unquote_splicing(Enum.map(args, fn {name, meta, ctx} -> {:"_#{name}", meta, ctx} end))),
-              do: :ok
+            def unquote(fun)(
+                  unquote_splicing(
+                    Enum.map(args, fn {name, meta, ctx} -> {:"_#{name}", meta, ctx} end)
+                  )
+                ),
+                do: :ok
           end
         else
           quote do
             @impl true
-            def unquote(fun)(unquote_splicing(args)), do: impl_module().unquote(fun)(unquote_splicing(args))
+            def unquote(fun)(unquote_splicing(args)),
+              do: impl_module().unquote(fun)(unquote_splicing(args))
           end
         end
       end

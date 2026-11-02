@@ -38,9 +38,15 @@ defmodule BoxTurtle.Schema.Change do
       ])
 
     repo =
-      Macro.expand(options[:repo] || raise(ArgumentError, "use BoxTurtle.Schema.Change requires the :repo option"), env)
+      Macro.expand(
+        options[:repo] ||
+          raise(ArgumentError, "use BoxTurtle.Schema.Change requires the :repo option"),
+        env
+      )
 
-    schema = Macro.expand(options[:schema] || BoxTurtle.Schema.Query.parent_module(env.module), env)
+    schema =
+      Macro.expand(options[:schema] || BoxTurtle.Schema.Query.parent_module(env.module), env)
+
     query = Macro.expand(options[:query] || Module.concat(schema, Query), env)
     create_changeset = options[:create_changeset]
     update_changeset = options[:update_changeset]
@@ -50,24 +56,30 @@ defmodule BoxTurtle.Schema.Change do
       @behaviour BoxTurtle.Schema.Change.API
 
       @impl BoxTurtle.Schema.Change.API
-      def create(%Ecto.Changeset{} = changeset), do: unquote(repo).insert(changeset, unquote(create_opts))
+      def create(%Ecto.Changeset{} = changeset),
+        do: unquote(repo).insert(changeset, unquote(create_opts))
+
       def create(%{} = attrs), do: attrs |> new_changeset() |> create()
 
       @impl BoxTurtle.Schema.Change.API
-      def create!(%Ecto.Changeset{} = changeset), do: unquote(repo).insert!(changeset, unquote(create_opts))
+      def create!(%Ecto.Changeset{} = changeset),
+        do: unquote(repo).insert!(changeset, unquote(create_opts))
+
       def create!(%{} = attrs), do: attrs |> new_changeset() |> create!()
 
       @impl BoxTurtle.Schema.Change.API
       def update(%Ecto.Changeset{} = changeset), do: unquote(repo).update(changeset)
 
       @impl BoxTurtle.Schema.Change.API
-      def update(%unquote(schema){} = item, %{} = changes), do: item |> update_changeset(changes) |> update()
+      def update(%unquote(schema){} = item, %{} = changes),
+        do: item |> update_changeset(changes) |> update()
 
       @impl BoxTurtle.Schema.Change.API
       def update!(%Ecto.Changeset{} = changeset), do: unquote(repo).update!(changeset)
 
       @impl BoxTurtle.Schema.Change.API
-      def update!(%unquote(schema){} = item, %{} = changes), do: item |> update_changeset(changes) |> update!()
+      def update!(%unquote(schema){} = item, %{} = changes),
+        do: item |> update_changeset(changes) |> update!()
 
       @impl BoxTurtle.Schema.Change.API
       def delete(%Ecto.Changeset{} = changeset), do: unquote(repo).delete(changeset)
@@ -89,7 +101,10 @@ defmodule BoxTurtle.Schema.Change do
       end
 
       defp new_changeset(attrs) do
-        apply(unquote(schema), unquote(create_changeset), [struct(unquote(schema)), changeable_attrs(attrs)])
+        apply(unquote(schema), unquote(create_changeset), [
+          struct(unquote(schema)),
+          changeable_attrs(attrs)
+        ])
       end
 
       defp update_changeset(item, changes) do

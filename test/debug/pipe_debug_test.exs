@@ -3,7 +3,9 @@ defmodule BoxTurtle.Debug.PipeDebugTest.FakeLogger do
   @callback info(binary()) :: :ok
 end
 
-Mox.defmock(BoxTurtle.Debug.PipeDebugTest.FakeLogger.Mock, for: BoxTurtle.Debug.PipeDebugTest.FakeLogger)
+Mox.defmock(BoxTurtle.Debug.PipeDebugTest.FakeLogger.Mock,
+  for: BoxTurtle.Debug.PipeDebugTest.FakeLogger
+)
 
 for module <- [BoxTurtle.Debug.PipeDebugTest.A, BoxTurtle.Debug.PipeDebugTest.B] do
   defmodule module do
@@ -51,7 +53,11 @@ defmodule BoxTurtle.Debug.PipeDebugTest do
 
     test "logs only for enabled modules" do
       enable([A])
-      expect(FakeLogger, :debug, fn message -> assert message =~ ~s(From BoxTurtle.Debug.PipeDebugTest.A: "Narf") end)
+
+      expect(FakeLogger, :debug, fn message ->
+        assert message =~ ~s(From BoxTurtle.Debug.PipeDebugTest.A: "Narf")
+      end)
+
       assert A.debug_something("Narf") == "Narf"
       assert B.debug_something("Nerf") == "Nerf"
     end
@@ -98,7 +104,9 @@ defmodule BoxTurtle.Debug.PipeDebugTest do
 
   test "rejects unsupported logger macros" do
     assert_raise ArgumentError, ~r/:logger_macro must be :debug or :info/, fn ->
-      Code.compile_string("defmodule BadDebug do use BoxTurtle.Debug.PipeDebug, logger_macro: :error end")
+      Code.compile_string(
+        "defmodule BadDebug do use BoxTurtle.Debug.PipeDebug, logger_macro: :error end"
+      )
     end
   end
 end

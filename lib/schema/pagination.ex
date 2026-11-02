@@ -26,7 +26,9 @@ defmodule BoxTurtle.Schema.Pagination do
   @spec page(Ecto.Queryable.t(), page_spec(), pos_integer()) :: Ecto.Queryable.t()
   def page(query, page, default_size \\ @default_page_size)
   def page(query, nil, _default_size), do: query
-  def page(query, number, default_size) when is_integer(number), do: page(query, [number: number], default_size)
+
+  def page(query, number, default_size) when is_integer(number),
+    do: page(query, [number: number], default_size)
 
   def page(query, spec, default_size) when is_list(spec) do
     number = spec |> Keyword.get(:number, 1) |> max(1)
