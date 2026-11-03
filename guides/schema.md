@@ -116,7 +116,7 @@ Call-time options (all of them are listed in `BoxTurtle.Schema.Query.API`):
 | `:filters` | `[status: "draft", author_id: nil]` | `WHERE`, see below |
 | `:sort` | `[desc: :likes, asc: :id]` | `ORDER BY`, replaces the default sort |
 | `:page` | `2` or `[number: 2, size: 10]` | `LIMIT`/`OFFSET` |
-| `:preloads` | `[:author]` | associations to preload |
+| `:preloads` | `[:author, comments: :user]` | associations, `LEFT JOIN`ed and loaded in the same query |
 | `:group_by` | `[:status]` | `count` returns one map per group |
 | `:distinct` | `[:author_id]` | `DISTINCT ON` for lists (PostgreSQL), `COUNT(DISTINCT ...)` for counts |
 | `:ignore_defaults` | `true` | skip the module's default sort, preloads and distinct |
@@ -169,6 +169,16 @@ end
 ```
 
 Pass it with `sorting_module: MyApp.Blog.Post.Sort`, then call `Post.Query.list!(sort: [:popularity])`. An unknown sort element raises `ArgumentError`.
+
+### Preloads
+
+Preloads are fetched with `LEFT JOIN`s, so a list or get, together with all its associations, is a single round trip to the database. Ecto's plain `preload` issues one extra query per association. Nesting works to any depth:
+
+```elixir
+Post.Query.list!(preloads: [author: [:company], comments: :user])
+```
+
+Joining a `has_many` repeats each parent row once per child. To keep `:page` and `:distinct` counting parents, BoxTurtle applies them in a primary-key subquery when a to-many association is preloaded, still in the same statement. Preloads accept association names only, not preload queries or functions.
 
 ### Pagination
 

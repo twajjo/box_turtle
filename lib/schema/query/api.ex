@@ -10,7 +10,9 @@ defmodule BoxTurtle.Schema.Query.API do
     * `:filters` - keyword list of filters, see `BoxTurtle.Schema.Filters`
     * `:sort` - sort specification, see `BoxTurtle.Schema.Sort`
     * `:page` - page number or `[number: n, size: s]`, see `BoxTurtle.Schema.Pagination`
-    * `:preloads` - associations to preload (ignored by aggregates)
+    * `:preloads` - associations to preload, nested to any depth (`[:author, comments: :user]`). They are
+      `LEFT JOIN`ed and loaded in the same query, see `BoxTurtle.Schema.Query.Helpers.preloads/3`.
+      Ignored by aggregates
     * `:distinct` - columns for `DISTINCT ON` (PostgreSQL only); a count uses the first one as
       `COUNT(DISTINCT column)`, which works on every database
     * `:group_by` - columns to group by; `count` then returns a list of maps

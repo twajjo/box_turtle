@@ -26,6 +26,7 @@ First public release.
 - `Schema.Query.get/2` returns `{:error, :not_found}` when no row matches.
 - `count/1` uses `COUNT(*)` and no longer requires an `inserted_at` column.
 - The `:no_defaults` option is now `:ignore_defaults`.
+- `:preloads` are loaded with `LEFT JOIN`s in the same query instead of one query per association. With to-many preloads, paging and `distinct` are applied to parent rows through a primary-key subquery. Preload queries and functions are no longer accepted.
 
 ### Removed
 

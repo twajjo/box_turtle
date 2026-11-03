@@ -139,7 +139,7 @@ defmodule BoxTurtle.Schema.Query do
         |> schema()
         |> build_query!(filter_module(opts), opts)
         |> where_key(key, primary_key(opts))
-        |> preloads(joining(default_preloads(opts), opts))
+        |> preloads(joining(default_preloads(opts), opts), primary_key(opts))
         |> repo(opts).one()
       end
 
@@ -163,7 +163,7 @@ defmodule BoxTurtle.Schema.Query do
           |> build_listings!(sorting_module(opts), default_sort(opts), opts, page_size(opts))
           |> build_query!(filter_module(opts), opts)
           |> unique(query_distinction(opts, default_distinct(opts)))
-          |> preloads(joining(default_preloads(opts), opts))
+          |> preloads(joining(default_preloads(opts), opts), primary_key(opts))
         end
       end
 

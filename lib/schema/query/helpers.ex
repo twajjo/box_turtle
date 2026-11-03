@@ -161,12 +161,101 @@ defmodule BoxTurtle.Schema.Query.Helpers do
   def group(query, column) when is_binary(column),
     do: group(query, String.to_existing_atom(column))
 
-  @doc "Adds preloads, dropping duplicates."
-  @spec preloads(Ecto.Queryable.t(), nil | atom() | list()) :: Ecto.Queryable.t()
-  def preloads(query, nil), do: query
-  def preloads(query, []), do: query
-  def preloads(query, schemas) when is_list(schemas), do: preload(query, ^Enum.uniq(schemas))
-  def preloads(query, schema) when is_atom(schema), do: preloads(query, [schema])
+  @doc """
+  Preloads associations through `LEFT JOIN`s, so rows and their associations come back from the
+  database in a single query instead of one extra query per association.
+
+  `assocs` takes the usual preload shapes, nested to any depth: `:author`, `[:author, :tags]`,
+  `[author: [:company], comments: :user]`. Duplicates are merged.
+
+  Joining a to-many association repeats each parent row once per child, so `LIMIT`, `OFFSET` and
+  `DISTINCT` would count child rows. When the query has any of them, they are applied in a subquery
+  selecting `primary_key`, and the joins are made against that selection.
+  """
+  @spec preloads(Ecto.Queryable.t(), nil | atom() | list(), atom()) :: Ecto.Queryable.t()
+  def preloads(query, assocs, primary_key \\ :id)
+  def preloads(query, nil, _primary_key), do: query
+  def preloads(query, [], _primary_key), do: query
+
+  def preloads(query, assocs, primary_key) do
+    query = Ecto.Queryable.to_query(query)
+    schema = root_schema!(query)
+    tree = preload_tree(assocs, [])
+
+    query =
+      if to_many?(schema, tree) and paged_or_distinct?(query),
+        do: restrict_to_selection(query, primary_key),
+        else: query
+
+    {joined, query} = join_preloads(query, :root, schema, tree)
+    Ecto.Query.Builder.Preload.apply(query, [], joined)
+  end
+
+  defp root_schema!(%Ecto.Query{from: %{source: {_source, schema}}})
+       when is_atom(schema) and not is_nil(schema),
+       do: schema
+
+  defp root_schema!(query),
+    do:
+      raise(ArgumentError, "join preloads need a query on an Ecto schema, got: #{inspect(query)}")
+
+  # Normalizes preload specs into a merged keyword tree: [author: [company: []], tags: []].
+  defp preload_tree(assoc, tree) when is_atom(assoc), do: preload_tree({assoc, []}, tree)
+
+  defp preload_tree(assocs, tree) when is_list(assocs),
+    do: Enum.reduce(assocs, tree, &preload_tree/2)
+
+  defp preload_tree({assoc, children}, tree) when is_atom(assoc),
+    do: Keyword.update(tree, assoc, preload_tree(children, []), &preload_tree(children, &1))
+
+  defp preload_tree(other, _tree) do
+    raise ArgumentError,
+          "preloads must be association names, optionally nested in lists, got: #{inspect(other)}"
+  end
+
+  defp association!(schema, assoc) do
+    schema.__schema__(:association, assoc) ||
+      raise ArgumentError, "#{inspect(schema)} has no association #{inspect(assoc)}"
+  end
+
+  defp to_many?(schema, tree) do
+    Enum.any?(tree, fn {assoc, children} ->
+      reflection = association!(schema, assoc)
+      reflection.cardinality == :many or to_many?(reflection.related, children)
+    end)
+  end
+
+  defp paged_or_distinct?(%Ecto.Query{limit: limit, offset: offset, distinct: distinct}),
+    do: not (is_nil(limit) and is_nil(offset) and is_nil(distinct))
+
+  defp restrict_to_selection(query, primary_key) do
+    selection = select(query, [q], %{key: field(q, ^primary_key)})
+
+    query
+    |> exclude(:limit)
+    |> exclude(:offset)
+    |> exclude(:distinct)
+    |> join(:inner, [q], s in subquery(selection), on: field(q, ^primary_key) == s.key)
+  end
+
+  # Joins each association to its parent binding and returns the {assoc, {binding_index, children}}
+  # tree that join preloads expect (what `preload([p, a], author: a)` builds at compile time).
+  defp join_preloads(query, parent, schema, tree) do
+    Enum.map_reduce(tree, query, fn {assoc, children}, query ->
+      reflection = association!(schema, assoc)
+      index = length(query.joins) + 1
+      name = :"box_turtle_preload_#{index}"
+      query = join_assoc(query, parent, assoc, name)
+      {child_joins, query} = join_preloads(query, name, reflection.related, children)
+      {{assoc, {index, child_joins}}, query}
+    end)
+  end
+
+  defp join_assoc(query, :root, assoc, name),
+    do: join(query, :left, [q], a in assoc(q, ^assoc), as: ^name)
+
+  defp join_assoc(query, parent, assoc, name),
+    do: join(query, :left, [{^parent, p}], a in assoc(p, ^assoc), as: ^name)
 
   @doc "Adds a `distinct` clause."
   @spec unique(Ecto.Queryable.t(), nil | atom() | list()) :: Ecto.Queryable.t()
