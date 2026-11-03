@@ -8,12 +8,49 @@ defmodule BoxTurtle.Runtime.DynamicInterface.ModuleDispatch do
 
   ## Usage
 
+      # The contract. It must be compiled before the facade.
+      defmodule MyApp.Mailer.API do
+        @callback deliver(to :: String.t(), subject :: String.t()) :: {:ok, term()} | {:error, term()}
+      end
+
+      # The default implementation, found by the <facade>.Impl naming convention.
+      defmodule MyApp.Mailer.Impl do
+        @behaviour MyApp.Mailer.API
+
+        @impl true
+        def deliver(to, subject), do: MyApp.SmtpClient.send(to, subject)
+      end
+
+      # The facade: implements MyApp.Mailer.API by forwarding each call.
       defmodule MyApp.Mailer do
         use BoxTurtle.Runtime.DynamicInterface.ModuleDispatch, otp_app: :my_app
       end
 
+      # Callers only know the facade.
+      defmodule MyApp.Accounts do
+        def send_welcome(user), do: MyApp.Mailer.deliver(user.email, "Welcome!")
+      end
+
+  In tests, point the facade at a Mox mock:
+
+      # test/test_helper.exs
+      Mox.defmock(MyApp.Mailer.Mock, for: MyApp.Mailer.API)
+
       # config/test.exs
       config :my_app, MyApp.Mailer, impl: MyApp.Mailer.Mock
+
+      # test/my_app/accounts_test.exs
+      defmodule MyApp.AccountsTest do
+        use ExUnit.Case, async: true
+        import Mox
+
+        setup :verify_on_exit!
+
+        test "send_welcome/1 mails the user" do
+          expect(MyApp.Mailer.Mock, :deliver, fn "ann@example.com", "Welcome!" -> {:ok, :sent} end)
+          assert {:ok, :sent} = MyApp.Accounts.send_welcome(%{email: "ann@example.com"})
+        end
+      end
 
   ## Options
 

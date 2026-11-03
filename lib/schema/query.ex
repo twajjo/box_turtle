@@ -2,18 +2,33 @@ defmodule BoxTurtle.Schema.Query do
   @moduledoc """
   Generates the standard read functions of `BoxTurtle.Schema.Query.API` for an Ecto schema.
 
+  Given an Ecto schema `MyApp.Blog.Post` (with `title`, `status`, timestamps, and
+  `belongs_to :author, MyApp.Blog.Author`), define a sibling module:
+
       defmodule MyApp.Blog.Post.Query do
         use BoxTurtle.Schema.Query,
           repo: MyApp.Repo,
-          default_sort: [desc: :inserted_at],
+          default_sort: [desc: :inserted_at, desc: :id],
           default_preloads: [:author]
       end
 
-      MyApp.Blog.Post.Query.list!(filters: [status: "published"], page: 2)
-      MyApp.Blog.Post.Query.count!(group_by: [:status])
-      {:ok, post} = MyApp.Blog.Post.Query.get(id)
+  and call it from your context:
 
-  See `BoxTurtle.Schema.Query.API` for the generated functions and their call-time options.
+      defmodule MyApp.Blog do
+        alias MyApp.Blog.Post
+
+        # Second page of published posts, newest first, each with its author (one query).
+        def published_posts(page), do: Post.Query.list!(filters: [status: "published"], page: page)
+
+        # [%{status: "draft", count: 3}, %{status: "published", count: 12}]
+        def post_counts_by_status, do: Post.Query.count!(group_by: [:status])
+
+        # {:ok, %Post{}} or {:error, :not_found}
+        def fetch_post(id), do: Post.Query.get(id)
+      end
+
+  See `BoxTurtle.Schema.Query.API` for the generated functions and their call-time options, and the
+  Schema guide for a walkthrough.
 
   ## Options
 
@@ -22,7 +37,8 @@ defmodule BoxTurtle.Schema.Query do
     * `:primary_key` - defaults to `:id`.
     * `:default_sort` - sort applied to lists unless overridden. Defaults to `[primary_key]`.
     * `:default_preloads` - associations to preload. Defaults to `[]`.
-    * `:default_distinct` - columns for `DISTINCT`. Defaults to `[]`.
+    * `:default_distinct` - columns for `DISTINCT ON` (PostgreSQL only: with other adapters the module
+      fails to compile). Defaults to `[]`.
     * `:filter_module` - a `BoxTurtle.Schema.Filters.API` implementation. Defaults to `BoxTurtle.Schema.Filters`.
     * `:sorting_module` - a `BoxTurtle.Schema.Sort.API` implementation. Defaults to `BoxTurtle.Schema.Sort`.
     * `:page_size` - rows per page when `:page` is a number. Defaults to 40.
@@ -39,15 +55,40 @@ defmodule BoxTurtle.Schema.Query do
        unscoped `count`, `list` or `query!`;
     3. with `extend/2`, your own clauses.
 
-  ```
-  use BoxTurtle.Schema.Query, repo: MyApp.Repo, delegates: [{MyApp.ByAuthor, %MyApp.Blog.Author{}}]
+  A delegate holds a scope shared by several schemas, here "rows belonging to an author". It is an
+  ordinary Query module; when called through a delegating module, `list/1` and `count/1` run
+  against the delegating module's schema:
 
-  delegate [:list_by, :count_by]
+      defmodule MyApp.Blog.ByAuthor do
+        use BoxTurtle.Schema.Query, repo: MyApp.Repo, schema: MyApp.Blog.Author
 
-  extend :get_by! do
-    def get_by!(slug, opts) when is_binary(slug), do: get!(%{slug: slug}, opts)
-  end
-  ```
+        extend :list_by do
+          def list_by(%MyApp.Blog.Author{id: id}, opts), do: list(add_filters(opts, author_id: id))
+        end
+
+        extend :count_by do
+          def count_by(%MyApp.Blog.Author{id: id}, opts), do: count(add_filters(opts, author_id: id))
+        end
+      end
+
+      defmodule MyApp.Blog.Post.Query do
+        use BoxTurtle.Schema.Query,
+          repo: MyApp.Repo,
+          delegates: [{MyApp.Blog.ByAuthor, %MyApp.Blog.Author{}}]
+
+        # list_by/2 and count_by/2 for %Author{} patterns (and nil), from the delegate.
+        delegate [:list_by, :count_by]
+
+        # Your own clauses (posts here have a :slug column).
+        extend :get_by! do
+          def get_by!(slug, opts) when is_binary(slug), do: get!(%{slug: slug}, opts)
+        end
+      end
+
+      author = MyApp.Repo.get!(MyApp.Blog.Author, author_id)
+      {:ok, posts} = MyApp.Blog.Post.Query.list_by(author, filters: [status: "published"])
+      {:ok, all_posts} = MyApp.Blog.Post.Query.list_by(nil)
+      post = MyApp.Blog.Post.Query.get_by!("hello-world")
   """
 
   alias BoxTurtle.Schema.Pagination

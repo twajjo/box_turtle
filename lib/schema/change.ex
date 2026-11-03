@@ -2,16 +2,37 @@ defmodule BoxTurtle.Schema.Change do
   @moduledoc """
   Generates the write functions of `BoxTurtle.Schema.Change.API` for an Ecto schema.
 
+  Attribute maps go through the schema's changeset functions, so the schema must define them:
+  `changeset/2` by default, for both inserts and updates.
+
+      defmodule MyApp.Blog.Post do
+        use Ecto.Schema
+        import Ecto.Changeset
+
+        schema "posts" do
+          field :title, :string
+          timestamps()
+        end
+
+        def changeset(post, attrs), do: post |> cast(attrs, [:title]) |> validate_required([:title])
+      end
+
+      # delete/1 by primary key looks rows up through the sibling Query module.
+      defmodule MyApp.Blog.Post.Query do
+        use BoxTurtle.Schema.Query, repo: MyApp.Repo
+      end
+
       defmodule MyApp.Blog.Post.Change do
         use BoxTurtle.Schema.Change, repo: MyApp.Repo
       end
 
-      {:ok, post} = MyApp.Blog.Post.Change.create(%{title: "Hello"})
-      {:ok, post} = MyApp.Blog.Post.Change.update(post, %{title: "Hello again"})
-      {:ok, _post} = MyApp.Blog.Post.Change.delete(post.id)
+      alias MyApp.Blog.Post
 
-  Attribute maps go through the schema's changeset functions, so the schema must define them:
-  `changeset/2` by default, for both inserts and updates.
+      {:ok, post} = Post.Change.create(%{title: "Hello"})
+      {:error, %Ecto.Changeset{}} = Post.Change.create(%{title: nil})
+      {:ok, post} = Post.Change.update(post, %{title: "Hello again"})
+      {:ok, _deleted} = Post.Change.delete(post.id)
+      {:error, :not_found} = Post.Change.delete(post.id)
 
   ## Options
 

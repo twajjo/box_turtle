@@ -4,33 +4,52 @@ defmodule BoxTurtle.Runtime.Config do
   application environment. Combine with `BoxTurtle.Runtime.Config.Helper` to get properly typed values from
   environment variables.
 
-  After calling load_runtime_config(application), runtime settings will be available using Application module functions, just as
-  though the values were set during compile time, although they are runtime values read from the ENV values.
+  After `load_runtime_config/1` runs, the script's settings are read with the usual `Application`
+  functions, just like compile-time config. Unlike Mix's own `config/runtime.exs`, the script can live
+  anywhere (for example `/etc/my_app/settings.exs` beside a release) and can be loaded again later.
 
-  Usage:
+  ## Usage
 
-    1. Make a runtime.exs file appropriate to your application according to the syntax specified in
-      Runtime.Config.Helper's documentation.
+  1. Write the settings script. Give it a name other than `config/runtime.exs`, which Mix and releases
+     already load by themselves:
 
-    2. Make sure that in your various compile-time config files you set runtime file locations.
-      prod.exs
-      ```
-      config :my_app,
-        # Path may be absolute or relative
-        runtime_config_file: "/etc/runtime.exs"
-      ```
-      dev.exs
-      ```
-      config :my_app,
-        # Path may be absolute or relative
-        runtime_config_file: "config/runtime.exs"
-      ```
-      test.exs
-      ```
-      config :my_app,
-        # Path may be absolute or relative
-        runtime_config_file: "test/support/runtime.exs"
-      ```
+         # config/settings.exs
+         import Config
+         alias BoxTurtle.Runtime.Config.Helper
+
+         config :my_app,
+           pool_size: Helper.get_env("POOL_SIZE", type: :integer, default: 10),
+           feature_flags: Helper.get_env("FEATURE_FLAGS", type: :list, subtype: :atom, default: [])
+
+  2. Point each build at its script. Relative paths are resolved from the current working directory:
+
+         # config/dev.exs
+         config :my_app, runtime_config_file: "config/settings.exs"
+
+         # config/test.exs
+         config :my_app, runtime_config_file: "test/support/settings.exs"
+
+         # config/prod.exs
+         config :my_app, runtime_config_file: "/etc/my_app/settings.exs"
+
+  3. Load it before starting anything that reads those settings:
+
+         defmodule MyApp.Application do
+           use Application
+
+           @impl true
+           def start(_type, _args) do
+             :ok = BoxTurtle.Runtime.Config.load_runtime_config(:my_app)
+
+             children = [{MyApp.Pool, size: Application.fetch_env!(:my_app, :pool_size)}]
+             Supervisor.start_link(children, strategy: :one_for_one, name: MyApp.Supervisor)
+           end
+         end
+
+  Only non-nil values replace existing settings, so an unset environment variable without a
+  `:default` keeps the compile-time value.
+
+  To load a specific file instead, pass its path: `load_runtime_config("/etc/my_app/settings.exs")`.
   """
   require Logger
 

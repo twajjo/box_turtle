@@ -1,6 +1,12 @@
 defmodule BoxTurtle.Common.IdUtils do
   @moduledoc """
   Small helpers for generating identifiers.
+
+      alias BoxTurtle.Common.IdUtils
+
+      IdUtils.generate_ksuid()  #=> "2Ux8k3WmS1mXJ9i1QeB6LcPq0Zf" (unique, sortable by time)
+      IdUtils.generate_uuid()   #=> "5b0e3f4a-8c1d-4d2e-9f6a-1b2c3d4e5f60" (unique, random)
+      IdUtils.generate_id()     #=> 734_201_558 (NOT unique: test data and labels only)
   """
 
   alias BoxTurtle.Schema.Ecto.Ksuid

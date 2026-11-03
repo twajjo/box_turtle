@@ -32,6 +32,7 @@ First public release.
 ### Fixed
 
 - `count(group_by: ["column"])` with string column names crashed while building the select.
+- `Config.Helper.get_env/2` crashed for an unset variable with a non-string `:type` and no `:default`; it now returns `nil`.
 
 ### Removed
 

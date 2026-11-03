@@ -170,5 +170,19 @@ defmodule BoxTurtle.Runtime.Config.Helper.Test do
       System.delete_env("UNDEFINED_VAR")
       assert(is_nil(Helper.get_env("UNDEFINED_VAR")))
     end
+
+    test "returns nil for unset variables of any type when there is no default" do
+      System.delete_env("UNDEFINED_VAR")
+
+      for type <- [:integer, :float, :boolean, :atom, :module, :charlist, :list, :tuple, :map] do
+        assert Helper.get_env("UNDEFINED_VAR", type: type) == nil
+      end
+    end
+
+    test "an unset variable fails validation when there is no default" do
+      System.delete_env("UNDEFINED_VAR")
+      assert {:error, _} = Helper.get_env("UNDEFINED_VAR", type: :integer, in_range: 1..10)
+      assert Helper.get_env("UNDEFINED_VAR", type: :integer, in_range: 1..10, default: 5) == 5
+    end
   end
 end

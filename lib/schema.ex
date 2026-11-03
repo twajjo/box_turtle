@@ -12,6 +12,12 @@ defmodule BoxTurtle.Schema do
         use BoxTurtle.Schema.Change, repo: MyApp.Repo
       end
 
+      alias MyApp.Blog.Post
+
+      {:ok, post} = Post.Change.create(%{title: "Hello"})   # uses Post.changeset/2
+      [^post] = Post.Query.list!(filters: [title: "Hello"])
+      1 = Post.Query.count!()
+
     * `BoxTurtle.Schema.Query` - `get`, `list`, `count` and `query!` with filters, sorting, pagination,
       preloads, grouping and distinct, plus pattern-scoped `*_by` extensions.
     * `BoxTurtle.Schema.Change` - `create`, `update` and `delete`.

@@ -3,10 +3,28 @@ defmodule BoxTurtle.Common.ReturnOkOr do
   Normalizes loosely-shaped results (`nil`, bare values, `:error`, `{:error, _}`) into `{:ok, value}` /
   `{:error, reason}` tuples, plus macros that log a message together with the caller's stack trace.
 
-      import BoxTurtle.Common.ReturnOkOr
+      defmodule MyApp.Blog do
+        import BoxTurtle.Common.ReturnOkOr
 
-      Repo.get(Post, id) |> return_ok_or(:not_found)
-      #=> {:ok, %Post{}} or {:error, :not_found}
+        alias MyApp.Blog.Post
+        alias MyApp.Repo
+
+        # Repo.get/2 returns a struct or nil; callers get {:ok, post} or {:error, :not_found}.
+        def fetch_post(id), do: Post |> Repo.get(id) |> return_ok_or(:not_found)
+
+        # Map.fetch/2 returns {:ok, value} or :error; normalize :error to a reason.
+        def fetch_setting(settings, key), do: settings |> Map.fetch(key) |> return_ok_or(:missing_setting)
+
+        def publish(id) do
+          with {:ok, post} <- fetch_post(id) do
+            post |> Post.changeset(%{status: "published"}) |> Repo.update()
+          end
+        end
+      end
+
+      MyApp.Blog.fetch_post(42)                       #=> {:ok, %MyApp.Blog.Post{id: 42}}
+      MyApp.Blog.fetch_post(-1)                       #=> {:error, :not_found}
+      MyApp.Blog.fetch_setting(%{theme: "dark"}, :lang) #=> {:error, :missing_setting}
   """
 
   @doc """

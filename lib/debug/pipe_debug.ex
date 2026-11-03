@@ -3,17 +3,35 @@ defmodule BoxTurtle.Debug.PipeDebug do
   Injects a `debug/3` function that can be dropped into the middle of a pipe to log a value, returning it unchanged.
 
   Logging is off by default and enabled per module through application configuration, so debug calls can stay in
-  the code without flooding the logs:
-
-      config :my_app, debug_enabled_modules: [MyApp.Accounts, MyApp.Billing]
+  the code without flooding the logs.
 
   ## Usage
 
-      use BoxTurtle.Debug.PipeDebug
+      defmodule MyApp.Billing do
+        use BoxTurtle.Debug.PipeDebug
 
-  Or
+        def invoice_total(items) do
+          items
+          |> Enum.map(& &1.price)
+          |> debug("prices")
+          |> Enum.sum()
+          # Only log suspicious totals.
+          |> debug("large total", condition: &(&1 > 10_000))
+        end
+      end
 
-      use BoxTurtle.Debug.PipeDebug, application: :my_app, logger_module: MyLogger, logger_macro: :info
+      # config/dev.exs: log from these modules only
+      config :my_app, debug_enabled_modules: [MyApp.Billing]
+
+      # Logger must also let :debug through (the default in dev):
+      config :logger, level: :debug
+
+  With that config, `MyApp.Billing.invoice_total([%{price: 5}, %{price: 7}])` returns `12` and logs
+  `prices: [5, 7]`. With `MyApp.Billing` not listed, it returns `12` and logs nothing.
+
+  To log at `:info` instead, or to pick the application whose config is read:
+
+      use BoxTurtle.Debug.PipeDebug, application: :my_app, logger_macro: :info
 
   ## Options
 
@@ -53,10 +71,12 @@ defmodule BoxTurtle.Debug.PipeDebug do
 
         ## Examples
 
+            # Inside a module that does `use BoxTurtle.Debug.PipeDebug` and is listed in
+            # config :my_app, debug_enabled_modules: [...]
             %{jazz: "Art", messenger: "Blakey"}
             |> Map.values()
-            |> debug("Jazz Message")
-            |> Enum.reverse()
+            |> debug("Jazz Message")          # logs: Jazz Message: ["Art", "Blakey"]
+            |> Enum.reverse()                 # returns ["Blakey", "Art"]
 
         """
         @spec debug(any(), String.t() | nil, keyword()) :: any()

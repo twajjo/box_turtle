@@ -13,21 +13,37 @@ defmodule BoxTurtle.Schema.Sort do
 
   ## Custom sorts
 
-  Use this module and add `sort_by/2` clauses for named sorts that aren't plain columns. Anything your clauses
-  don't match falls through to the default behaviour one element at a time:
+  Use this module and add `sort_by/2` clauses for named sorts that aren't plain columns. Each clause
+  handles the element at the head of the list and must pass the rest back to `sort_by/2`. Elements
+  your clauses don't match fall through to the default behaviour, one element at a time.
 
-      defmodule MyApp.Post.Sort do
+  For a `MyApp.Blog.Post` schema with `likes` and `shares` fields:
+
+      defmodule MyApp.Blog.Post.Sort do
         use BoxTurtle.Schema.Sort
         import Ecto.Query
 
+        # Most engagement first; the primary key breaks ties so pages are stable.
         def sort_by(query, [:popularity | rest]) do
           query
-          |> order_by([p], desc: p.likes + p.shares)
+          |> order_by([p], desc: p.likes + p.shares, asc: p.id)
           |> sort_by(rest)
         end
       end
 
-  Then pass `sorting_module: MyApp.Post.Sort` to `use BoxTurtle.Schema.Query`.
+      defmodule MyApp.Blog.Post.Query do
+        use BoxTurtle.Schema.Query,
+          repo: MyApp.Repo,
+          sorting_module: MyApp.Blog.Post.Sort,
+          default_sort: [:popularity]
+      end
+
+      MyApp.Blog.Post.Query.list!()                                  # most popular first
+      MyApp.Blog.Post.Query.list!(sort: [desc: :inserted_at, asc: :id]) # plain columns still work
+
+  `:default_sort` goes through your module too, so it may use your named sorts. Sorts on joined
+  columns and closed modules for `?sort=-likes,title` params are shown in the repository's
+  `test/support/examples/schema.ex`.
   """
   @behaviour BoxTurtle.Schema.Sort.API
 

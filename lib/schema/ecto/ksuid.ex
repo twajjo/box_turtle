@@ -3,8 +3,32 @@ defmodule BoxTurtle.Schema.Ecto.Ksuid do
   An `Ecto.Type` for [KSUID](https://github.com/segmentio/ksuid) keys, stored as 27-character base62 strings.
   KSUIDs sort by creation time, which makes them convenient primary keys.
 
-      @primary_key {:id, BoxTurtle.Schema.Ecto.Ksuid, autogenerate: true}
-      @foreign_key_type BoxTurtle.Schema.Ecto.Ksuid
+      defmodule MyApp.Blog.Tag do
+        use Ecto.Schema
+
+        # Generated on insert; @foreign_key_type makes belongs_to fields KSUIDs too.
+        @primary_key {:id, BoxTurtle.Schema.Ecto.Ksuid, autogenerate: true}
+        @foreign_key_type BoxTurtle.Schema.Ecto.Ksuid
+
+        schema "tags" do
+          field :name, :string
+        end
+      end
+
+      # The migration stores the key as a string column.
+      defmodule MyApp.Repo.Migrations.CreateTags do
+        use Ecto.Migration
+
+        def change do
+          create table(:tags, primary_key: false) do
+            add :id, :string, size: 27, primary_key: true
+            add :name, :string, null: false
+          end
+        end
+      end
+
+      {:ok, tag} = MyApp.Repo.insert(%MyApp.Blog.Tag{name: "elixir"})
+      tag.id #=> "2Ux8k3WmS1mXJ9i1QeB6LcPq0Zf"
   """
   use Ecto.Type
 

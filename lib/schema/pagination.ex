@@ -2,12 +2,22 @@ defmodule BoxTurtle.Schema.Pagination do
   @moduledoc """
   Limit/offset pagination for Ecto queries.
 
-  A page is given either as a page number (using the default page size) or as a keyword list:
+  `BoxTurtle.Schema.Query` applies it for the `:page` option, so you rarely call it directly. It also
+  works on any Ecto query. A page is either a page number, using the default size, or a keyword list:
 
-      page(query, 2)                    # second page of @default_page_size rows
-      page(query, number: 2, size: 10)  # rows 11-20
+      import Ecto.Query
+      alias BoxTurtle.Schema.Pagination
 
-  Page numbers below 1 are treated as 1.
+      query = from(p in MyApp.Blog.Post, order_by: [desc: p.inserted_at, desc: p.id])
+
+      # Second page of 40 rows (the default size): LIMIT 40 OFFSET 40
+      query |> Pagination.page(2) |> MyApp.Repo.all()
+
+      # Rows 11-20: LIMIT 10 OFFSET 10
+      query |> Pagination.page(number: 2, size: 10) |> MyApp.Repo.all()
+
+  Page numbers below 1 are treated as 1. Give the query an `order_by` ending in a unique column,
+  so rows don't move between pages.
   """
   import Ecto.Query
 

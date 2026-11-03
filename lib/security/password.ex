@@ -6,6 +6,18 @@ defmodule BoxTurtle.Security.Password do
   All randomness comes from `:crypto.strong_rand_bytes/1` (through `:crypto.rand_seed_s/0`),
   so the passwords are suitable for credentials. The caller's `:rand` seed is not touched.
 
+      alias BoxTurtle.Security.Password
+
+      {:ok, password} = Password.generate(16)
+      String.length(password)  #=> 16
+      {:error, :too_short} = Password.generate(4)
+
+      # e.g. a temporary password for an account created by an admin
+      def create_invited_user(attrs) do
+        {:ok, password} = Password.generate(20)
+        attrs |> Map.put(:password, password) |> MyApp.Accounts.register_user()
+      end
+
   The approach is inspired by the Rosetta Code
   [Password generator](https://rosettacode.org/wiki/Password_generator) task.
   """

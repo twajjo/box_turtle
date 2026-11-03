@@ -2,14 +2,27 @@ defmodule BoxTurtle.Runtime.Application.Helper do
   @moduledoc """
   Utilities for building an application's supervision tree.
 
-  Import the module to use its functions in `start/2`:
+  Import the module in your `Application` and build the children list step by step:
 
-      import BoxTurtle.Runtime.Application.Helper
+      defmodule MyApp.Application do
+        use Application
 
-      children =
-        [MyApp.Repo]
-        |> conditional_append(Application.get_env(:my_app, :start_web?), MyAppWeb.Endpoint)
-        |> conditional_append(&MyApp.Features.workers_enabled?/0, [MyApp.Worker])
+        import BoxTurtle.Runtime.Application.Helper
+
+        @impl true
+        def start(_type, _args) do
+          children =
+            [MyApp.Repo]
+            # A boolean, e.g. from config: config :my_app, start_web?: false
+            |> conditional_append(Application.get_env(:my_app, :start_web?, true), MyAppWeb.Endpoint)
+            # A function, called when the tree is built
+            |> conditional_append(&MyApp.Features.workers_enabled?/0, [MyApp.Worker, MyApp.Scheduler])
+            # A function with arguments
+            |> conditional_append(&Code.ensure_loaded?/1, MyApp.Metrics, [Telemetry.Metrics])
+
+          Supervisor.start_link(children, strategy: :one_for_one, name: MyApp.Supervisor)
+        end
+      end
   """
 
   @typedoc "A boolean, or a function returning one when applied to the `args` list."

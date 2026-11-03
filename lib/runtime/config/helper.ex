@@ -1,11 +1,39 @@
 defmodule BoxTurtle.Runtime.Config.Helper do
   @moduledoc """
-  ## Helper
+  Reads environment variables and parses them into typed, validated Elixir values, so config files
+  don't need their own parsing and validation.
 
-  A utility for fetching environment variable values from System and parsing them into the correct types ready for
-  use in elixir without having to do all the parsing and validation yourself.
+  ## Example
 
-  Helper.get_env("ENV_VAR_NAME", <options>)
+      # config/runtime.exs
+      import Config
+      alias BoxTurtle.Runtime.Config.Helper
+
+      config :my_app, MyApp.Repo,
+        # "20" -> 20; must be 1..100; 10 when POOL_SIZE is unset
+        pool_size: Helper.get_env("POOL_SIZE", type: :integer, default: 10, in_range: 1..100)
+
+      config :my_app,
+        # "debug" -> :debug; only these existing atoms are accepted
+        log_level: Helper.get_env("LOG_LEVEL", type: :atom, in_set: [:debug, :info, :warning], default: :info),
+        # "a.example.com, b.example.com" -> ["a.example.com", "b.example.com"]
+        hosts: Helper.get_env("HOSTS", type: :list, default: ["localhost"]),
+        # "localhost,5432" -> {"localhost", 5432}, one subtype per element
+        db_endpoint: Helper.get_env("DB_ENDPOINT", type: :tuple, subtype: {:string, :integer}),
+        # ~s({"beta": true}) -> %{"beta" => true}
+        features: Helper.get_env("FEATURES", type: :map, default: %{})
+
+  An unset variable gives the `:default`, or `nil` when there is none. With a validation (`:in_set`,
+  `:in_range`, `:regex`, `:custom`) and no `:default`, an unset variable fails validation, so the
+  variable is effectively required.
+
+  A value that fails to parse or validate is returned as `{:error, message}`, not raised. Check for it
+  where a bad value must stop the boot:
+
+      case Helper.get_env("PORT", type: :integer, in_range: 1..65_535, default: 4000) do
+        {:error, message} -> raise "invalid PORT: \#{message}"
+        port -> config :my_app, MyAppWeb.Endpoint, http: [port: port]
+      end
 
   ## Valid options:
 
@@ -179,6 +207,9 @@ defmodule BoxTurtle.Runtime.Config.Helper do
   defp parse(nil, _type, %{default: default} = _opts) do
     default
   end
+
+  # Unset, no default: nil, whatever the type (`required: true` turns this into an error).
+  defp parse(nil, _type, _opts), do: nil
 
   defp parse(value, nil, opts) do
     parse(value, :string, opts)
