@@ -18,7 +18,11 @@ defmodule BoxTurtle.MixProject do
       homepage_url: @source_url,
       docs: docs(),
       test_coverage: [tool: ExCoveralls],
-      dialyzer: [plt_add_apps: [:mix, :ex_unit]]
+      dialyzer: [
+        plt_add_apps: [:mix, :ex_unit],
+        plt_core_path: "priv/plts",
+        plt_local_path: "priv/plts"
+      ]
     ]
   end
 

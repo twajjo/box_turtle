@@ -31,3 +31,6 @@ box_turtle-*.tar
 
 # Test database
 /test/support/*.db*
+
+# Dialyzer PLTs (cached in CI)
+/priv/plts/
