@@ -180,6 +180,25 @@ Post.Query.list!(preloads: [author: [:company], comments: :user])
 
 Joining a `has_many` repeats each parent row once per child. To keep `:page` and `:distinct` counting parents, BoxTurtle applies them in a primary-key subquery when a to-many association is preloaded, still in the same statement. Preloads accept association names only, not preload queries or functions.
 
+### More filter and sort examples
+
+The repository has reference filter and sort modules with tests that use them:
+[`test/support/examples/schema.ex`](https://github.com/twajjo/box_turtle/blob/main/test/support/examples/schema.ex),
+[`custom_filters_test.exs`](https://github.com/twajjo/box_turtle/blob/main/test/schema/custom_filters_test.exs)
+and [`custom_sort_test.exs`](https://github.com/twajjo/box_turtle/blob/main/test/schema/custom_sort_test.exs). They cover:
+
+- **Open modules** (`use BoxTurtle.Schema.Filters` / `Sort`):
+  - comparisons, LIKE search with escaping, flags that expand to other filters;
+  - overriding a real column for one value;
+  - filters and sorts on a joined association, sharing one named join;
+  - filtering parents by their children with a subquery.
+- **Closed modules** that implement the behaviour directly. They accept only allow-listed, string-keyed request params, and everything else raises.
+
+Two rules worth knowing:
+
+- Each clause must pass the rest of the list back (`|> filter_with(rest)`).
+- Custom clauses see keys exactly as given, so match atoms and convert params yourself.
+
 ### Pagination
 
 `page: n` returns page `n` of `:page_size` rows (default 40). `page: [number: n, size: s]` sets the size per call. Pages below 1 are treated as 1. Combine pagination with a sort, since pages without an `ORDER BY` are not stable.

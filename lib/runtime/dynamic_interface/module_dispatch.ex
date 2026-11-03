@@ -23,7 +23,23 @@ defmodule BoxTurtle.Runtime.DynamicInterface.ModuleDispatch do
     * `:otp_app` - when given, `impl_module/0` reads `config :otp_app, <using module>, impl: module` at runtime,
       falling back to `:impl`.
     * `:generate_stub` - when `true`, every callback is defined to return `:ok` instead of forwarding.
-      Defaults to `false`.
+      Defaults to `false`. Combine it with `Application.compile_env/3` to stub a fire-and-forget
+      interface out of some builds.
+
+  ## Patterns
+
+  Because `impl_module/0` reads the configuration on every call, one facade supports:
+
+    * **per-build implementations** - set `impl:` differently in `config/dev.exs`, `test.exs` and `prod.exs`;
+    * **runtime switching** - `Application.put_env/3` takes effect on the next call (failover, feature flags);
+    * **Mox** - point `impl:` at `Mox.defmock(MyApp.Mailer.Mock, for: MyApp.Mailer.API)` in the test
+      build, and use `Mox.stub_with/2` to fall back to a real implementation;
+    * **A/B tests** - make the configured implementation a router that implements the same behaviour
+      and picks a variant per caller.
+
+  Worked examples of each, with fake implementations and the tests that use them, are in the
+  repository: `test/support/examples/dispatch.ex` and
+  `test/runtime/dynamic_interface/dispatch_examples_test.exs`.
   """
 
   defmacro __using__(opts) do

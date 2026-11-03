@@ -1,5 +1,8 @@
 alias BoxTurtle.Test.{Migration, PgRepo, Repo}
 
+# The mock config/test.exs points the BoxTurtle.Examples.Notifier facade at.
+Mox.defmock(BoxTurtle.Examples.Notifier.Mock, for: BoxTurtle.Examples.Notifier.API)
+
 {:ok, _} = Application.ensure_all_started(:ecto_sql)
 
 # Start from an empty database on every run.

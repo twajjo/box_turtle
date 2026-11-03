@@ -113,6 +113,8 @@ end
 config :my_app, MyApp.Mailer, impl: MyApp.Mailer.Mock
 ```
 
+The implementation is read on every call. So the same facade gives you a different implementation per build, runtime switching (failover, feature flags), Mox mocks that can fall back to a real implementation, and A/B tests through a router implementation. All of these are demonstrated, with fake implementations, in [`test/support/examples/dispatch.ex`](https://github.com/twajjo/box_turtle/blob/main/test/support/examples/dispatch.ex) and [its tests](https://github.com/twajjo/box_turtle/blob/main/test/runtime/dynamic_interface/dispatch_examples_test.exs).
+
 ## Pipe debugging
 
 ```elixir
