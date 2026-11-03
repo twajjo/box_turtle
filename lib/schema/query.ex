@@ -51,6 +51,7 @@ defmodule BoxTurtle.Schema.Query do
   """
 
   alias BoxTurtle.Schema.Pagination
+  alias BoxTurtle.Schema.Query.Helpers
 
   @extensions %{
     count_by: :count,
@@ -282,7 +283,7 @@ defmodule BoxTurtle.Schema.Query do
 
       columns ->
         Code.ensure_compiled!(repo)
-        BoxTurtle.Schema.Query.Helpers.distinct_on!(columns, repo)
+        Helpers.distinct_on!(columns, repo)
         :ok
     end
   end
