@@ -24,6 +24,8 @@ defmodule BoxTurtle.Schema.Change do
     * `:create_opts` - options passed to `c:Ecto.Repo.insert/2`, e.g. `[on_conflict: :nothing]`.
   """
 
+  alias BoxTurtle.Schema.Query
+
   defmacro __using__(options) do
     env = __CALLER__
 
@@ -45,9 +47,9 @@ defmodule BoxTurtle.Schema.Change do
       )
 
     schema =
-      Macro.expand(options[:schema] || BoxTurtle.Schema.Query.parent_module(env.module), env)
+      Macro.expand(options[:schema] || Query.parent_module(env.module), env)
 
-    query = Macro.expand(options[:query] || Module.concat(schema, Query), env)
+    query = Macro.expand(options[:query] || Module.concat(schema, "Query"), env)
     create_changeset = options[:create_changeset]
     update_changeset = options[:update_changeset]
     create_opts = options[:create_opts]

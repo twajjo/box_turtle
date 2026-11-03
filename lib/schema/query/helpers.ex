@@ -8,6 +8,9 @@ defmodule BoxTurtle.Schema.Query.Helpers do
   import Ecto.Query
   import BoxTurtle.Schema.Pagination
 
+  # Public callback of Ecto's preload builder; attaches join preloads built at runtime.
+  alias Ecto.Query.Builder.Preload
+
   @option_keys ~w(aggregate distinct filters group_by page preloads sort)a
 
   ###
@@ -188,7 +191,7 @@ defmodule BoxTurtle.Schema.Query.Helpers do
         else: query
 
     {joined, query} = join_preloads(query, :root, schema, tree)
-    Ecto.Query.Builder.Preload.apply(query, [], joined)
+    Preload.apply(query, [], joined)
   end
 
   defp root_schema!(%Ecto.Query{from: %{source: {_source, schema}}})

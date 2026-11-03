@@ -50,6 +50,8 @@ defmodule BoxTurtle.Schema.Query do
   ```
   """
 
+  alias BoxTurtle.Schema.Pagination
+
   @extensions %{
     count_by: :count,
     count_by!: :count!,
@@ -75,7 +77,7 @@ defmodule BoxTurtle.Schema.Query do
         filter_module: BoxTurtle.Schema.Filters,
         sorting_module: BoxTurtle.Schema.Sort,
         primary_key: :id,
-        page_size: BoxTurtle.Schema.Pagination.default_page_size()
+        page_size: Pagination.default_page_size()
       ])
 
     repo =

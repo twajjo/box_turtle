@@ -2,6 +2,8 @@ defmodule BoxTurtle.Runtime.Config.Test do
   @moduledoc false
   use ExUnit.Case, async: false
 
+  alias BoxTurtle.Runtime.Config
+
   describe "load_config/1" do
     setup do
       Application.put_env(:box_turtle, :test_not_replaced, "Still here")
@@ -17,7 +19,7 @@ defmodule BoxTurtle.Runtime.Config.Test do
       assert(Application.get_env(:box_turtle, :test_integer_value) == 123)
       assert(Application.get_env(:box_turtle, :test_string_value) == "Original")
       assert(Application.get_env(:box_turtle, :test_atom_value) == :original)
-      BoxTurtle.Runtime.Config.load_runtime_config(:box_turtle)
+      Config.load_runtime_config(:box_turtle)
       # Run time
       assert(Application.get_env(:box_turtle, :test_not_replaced) == "Still here")
       assert(Application.get_env(:box_turtle, :test_integer_value) != 123)

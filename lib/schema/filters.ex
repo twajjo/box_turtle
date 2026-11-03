@@ -48,7 +48,7 @@ defmodule BoxTurtle.Schema.Filters do
 
       def filter_with(query, [filter | filters]) do
         query
-        |> BoxTurtle.Schema.Filters.apply_filter(filter)
+        |> unquote(__MODULE__).apply_filter(filter)
         |> filter_with(filters)
       end
     end

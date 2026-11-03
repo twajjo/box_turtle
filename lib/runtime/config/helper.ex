@@ -77,7 +77,10 @@ defmodule BoxTurtle.Runtime.Config.Helper do
 
   # Testing hooks
   defmodule Wrapper do
+    @moduledoc false
+
     defmodule API do
+      @moduledoc false
       @callback get_env(String.t(), String.t() | nil) :: String.t() | nil
     end
 
@@ -112,7 +115,6 @@ defmodule BoxTurtle.Runtime.Config.Helper do
     # Use the explicitly defined type if provided.
     # Unspecified type: try to determine from the data type of the default.
     # No default type: try to determine from the data type of the set (if :in_set specified).
-    # TODO: (Maybe deterine from "in-range"?)
     # Must be a string, then...
     opts[:type] ||
       type_of(opts[:default]) ||

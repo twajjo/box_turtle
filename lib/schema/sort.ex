@@ -50,7 +50,7 @@ defmodule BoxTurtle.Schema.Sort do
 
       def sort_by(query, [spec | specs]) do
         query
-        |> BoxTurtle.Schema.Sort.apply_sort(spec)
+        |> unquote(__MODULE__).apply_sort(spec)
         |> sort_by(specs)
       end
 

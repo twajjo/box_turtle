@@ -3,8 +3,8 @@ defmodule BoxTurtle.Schema.BuildingBlocksTest do
 
   import Ecto.Query
 
-  alias BoxTurtle.Schema.{Filters, Pagination, Sort}
   alias BoxTurtle.Schema.Ecto.Ksuid
+  alias BoxTurtle.Schema.{Filters, Pagination, Sort}
   alias BoxTurtle.Test.Post
 
   describe "Sort.sort_by/2" do

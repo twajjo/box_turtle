@@ -15,7 +15,7 @@ defmodule BoxTurtle.Common.ReturnOkOr do
   defmacro error_with_stack(message) do
     quote do
       require Logger
-      Logger.error(BoxTurtle.Common.ReturnOkOr.with_stack(unquote(message)))
+      Logger.error(unquote(__MODULE__).with_stack(unquote(message)))
     end
   end
 
@@ -25,7 +25,7 @@ defmodule BoxTurtle.Common.ReturnOkOr do
   defmacro warn_with_stack(message) do
     quote do
       require Logger
-      Logger.warning(BoxTurtle.Common.ReturnOkOr.with_stack(unquote(message)))
+      Logger.warning(unquote(__MODULE__).with_stack(unquote(message)))
     end
   end
 

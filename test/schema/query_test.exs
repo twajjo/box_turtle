@@ -96,7 +96,7 @@ defmodule BoxTurtle.Schema.QueryTest do
 
     test "query!/1 builds without running" do
       assert %Ecto.Query{} = query = Post.Query.query!(filters: [status: "draft"])
-      assert BoxTurtle.Test.Repo.all(query) |> titles() == ~w(a)
+      assert Repo.all(query) |> titles() == ~w(a)
     end
   end
 

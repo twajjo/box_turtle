@@ -3,6 +3,8 @@ defmodule BoxTurtle.Common.IdUtils do
   Small helpers for generating identifiers.
   """
 
+  alias BoxTurtle.Schema.Ecto.Ksuid
+
   @doc """
   Returns a random integer between 1 and 1,000,000,000.
 
@@ -20,7 +22,7 @@ defmodule BoxTurtle.Common.IdUtils do
   """
   @spec generate_ksuid() :: String.t()
   def generate_ksuid do
-    BoxTurtle.Schema.Ecto.Ksuid.autogenerate()
+    Ksuid.autogenerate()
   end
 
   @doc """
