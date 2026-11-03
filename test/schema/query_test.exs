@@ -84,9 +84,33 @@ defmodule BoxTurtle.Schema.QueryTest do
       assert Post.Query.list!(filters: [min_likes: 5, status: "published"]) |> titles() == ~w(c)
     end
 
-    # SQLite has no DISTINCT ON, so check the query instead of running it.
-    test "distinct" do
-      assert inspect(Post.Query.query!(distinct: [:status])) =~ "distinct: [asc: p0.status]"
+    # Results are covered against PostgreSQL in postgres_test.exs.
+    test "distinct is rejected when the build starts, for adapters without DISTINCT ON" do
+      assert_raise ArgumentError, ~r/needs DISTINCT ON.*Ecto.Adapters.SQLite3/, fn ->
+        Post.Query.query!(distinct: [:status])
+      end
+
+      assert_raise ArgumentError, ~r/needs DISTINCT ON/, fn ->
+        Post.Query.list!(distinct: :status)
+      end
+    end
+
+    test "distinct is accepted when a call-time repo supports DISTINCT ON" do
+      query = Post.Query.query!(distinct: [:status], repo: BoxTurtle.Test.PgRepo)
+      assert inspect(query) =~ "distinct: [asc: p0.status]"
+    end
+
+    test "default_distinct is rejected at compile time for adapters without DISTINCT ON" do
+      assert_raise ArgumentError, ~r/needs DISTINCT ON/, fn ->
+        Code.compile_string("""
+        defmodule BoxTurtle.Test.BadDistinct.Query do
+          use BoxTurtle.Schema.Query,
+            repo: BoxTurtle.Test.Repo,
+            schema: BoxTurtle.Test.Post,
+            default_distinct: [:status]
+        end
+        """)
+      end
     end
 
     test "ignore_defaults drops the default sort" do

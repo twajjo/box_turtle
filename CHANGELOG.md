@@ -17,6 +17,7 @@ First public release.
 - `BoxTurtle.Runtime.Config.Helper`: the `:map` type (JSON, via the standard library) and the `unsafe_atoms` option.
 - `BoxTurtle.Runtime.DynamicInterface.ModuleDispatch`: facade modules that forward a behaviour to a configurable implementation, or generate stubs.
 - `BoxTurtle.Security.Password.min_length/0`.
+- `:distinct` with an adapter that has no `DISTINCT ON` (SQLite3, MyXQL, Tds) raises a clear `ArgumentError` when the query is built. A `:default_distinct` like that is rejected at compile time.
 
 ### Changed (compared to the pre-release code)
 
@@ -27,6 +28,10 @@ First public release.
 - `count/1` uses `COUNT(*)` and no longer requires an `inserted_at` column.
 - The `:no_defaults` option is now `:ignore_defaults`.
 - `:preloads` are loaded with `LEFT JOIN`s in the same query instead of one query per association. With to-many preloads, paging and `distinct` are applied to parent rows through a primary-key subquery. Preload queries and functions are no longer accepted.
+
+### Fixed
+
+- `count(group_by: ["column"])` with string column names crashed while building the select.
 
 ### Removed
 

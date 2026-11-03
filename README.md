@@ -23,7 +23,7 @@ def deps do
 end
 ```
 
-BoxTurtle requires Elixir 1.20 or later. The Schema modules work with any Ecto SQL adapter. `:distinct` columns (`DISTINCT ON`) are PostgreSQL-only.
+BoxTurtle requires Elixir 1.20 or later. The Schema modules work with any Ecto SQL adapter. `:distinct` on lists uses `DISTINCT ON`, which is PostgreSQL-only. With SQLite, MySQL or MSSQL it raises an `ArgumentError`: at compile time for `:default_distinct`, and when the query is built for call-time `:distinct`. Counts can use `:distinct` with any adapter.
 
 ## Schema in two minutes
 
@@ -143,6 +143,9 @@ config :my_app, debug_enabled_modules: [MyApp.Billing]
 ```bash
 mix deps.get
 mix test            # Schema tests run against SQLite; no database server needed
+
+# Also run the PostgreSQL-only tests (DISTINCT ON); the database is created and dropped for you
+BOX_TURTLE_PG_URL=postgres://postgres:postgres@localhost:5432/box_turtle_test mix test
 mix credo --strict
 mix dialyzer
 mix docs

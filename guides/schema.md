@@ -118,7 +118,7 @@ Call-time options (all of them are listed in `BoxTurtle.Schema.Query.API`):
 | `:page` | `2` or `[number: 2, size: 10]` | `LIMIT`/`OFFSET` |
 | `:preloads` | `[:author, comments: :user]` | associations, `LEFT JOIN`ed and loaded in the same query |
 | `:group_by` | `[:status]` | `count` returns one map per group |
-| `:distinct` | `[:author_id]` | `DISTINCT ON` for lists (PostgreSQL), `COUNT(DISTINCT ...)` for counts |
+| `:distinct` | `[:author_id]` | `DISTINCT ON` for lists (PostgreSQL only; other adapters raise `ArgumentError`), `COUNT(DISTINCT ...)` for counts on any adapter |
 | `:ignore_defaults` | `true` | skip the module's default sort, preloads and distinct |
 
 ### Filters

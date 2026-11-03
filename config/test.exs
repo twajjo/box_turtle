@@ -7,4 +7,11 @@ config :box_turtle, BoxTurtle.Test.Repo,
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: 2
 
+# PostgreSQL tests (tagged :postgres) run only when BOX_TURTLE_PG_URL is set, e.g.
+# BOX_TURTLE_PG_URL=postgres://postgres:postgres@localhost:5432/box_turtle_test mix test
+config :box_turtle, BoxTurtle.Test.PgRepo,
+  url: System.get_env("BOX_TURTLE_PG_URL"),
+  pool: Ecto.Adapters.SQL.Sandbox,
+  pool_size: 2
+
 config :logger, level: :warning

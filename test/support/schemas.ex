@@ -129,3 +129,30 @@ end
 defmodule BoxTurtle.Test.Tag.Change do
   use BoxTurtle.Schema.Change, repo: BoxTurtle.Test.Repo
 end
+
+defmodule BoxTurtle.Test.Code do
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  @primary_key {:code, :string, autogenerate: false}
+  schema "codes" do
+    field(:label, :string)
+  end
+
+  def changeset(code, attrs), do: cast(code, attrs, [:code, :label])
+
+  # Insert-only changeset that upcases the code.
+  def create_changeset(code, attrs) do
+    code
+    |> changeset(attrs)
+    |> update_change(:code, &String.upcase/1)
+  end
+end
+
+defmodule BoxTurtle.Test.Code.Query do
+  use BoxTurtle.Schema.Query, repo: BoxTurtle.Test.Repo, primary_key: :code
+end
+
+defmodule BoxTurtle.Test.Code.Change do
+  use BoxTurtle.Schema.Change, repo: BoxTurtle.Test.Repo, create_changeset: :create_changeset
+end

@@ -98,6 +98,8 @@ defmodule BoxTurtle.Schema.Query do
       page_size: options[:page_size]
     ]
 
+    check_default_distinct!(settings[:default_distinct], settings[:repo])
+
     # Read back by extend/2 and delegate/1 while the using module compiles.
     Module.put_attribute(env.module, :__box_turtle_query__, %{
       scope: expand(options[:ownership_scope], env),
@@ -164,7 +166,7 @@ defmodule BoxTurtle.Schema.Query do
           query
           |> build_listings!(sorting_module(opts), default_sort(opts), opts, page_size(opts))
           |> build_query!(filter_module(opts), opts)
-          |> unique(query_distinction(opts, default_distinct(opts)))
+          |> unique(opts |> query_distinction(default_distinct(opts)) |> distinct_on!(repo(opts)))
           |> preloads(joining(default_preloads(opts), opts), primary_key(opts))
         end
       end
@@ -270,6 +272,20 @@ defmodule BoxTurtle.Schema.Query do
   end
 
   defp expand(ast, env), do: Macro.expand(ast, env)
+
+  # Catches a :default_distinct the repo can't run at compile time. This makes the using module
+  # wait for the repo to compile, so it is only done when :default_distinct is set.
+  defp check_default_distinct!(columns, repo) do
+    case List.wrap(columns) do
+      [] ->
+        :ok
+
+      columns ->
+        Code.ensure_compiled!(repo)
+        BoxTurtle.Schema.Query.Helpers.distinct_on!(columns, repo)
+        :ok
+    end
+  end
 
   @doc false
   def parent_module(module), do: module |> Module.split() |> Enum.drop(-1) |> Module.concat()

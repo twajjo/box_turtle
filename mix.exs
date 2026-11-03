@@ -40,6 +40,7 @@ defmodule BoxTurtle.MixProject do
       {:ksuid, "~> 0.1.2"},
       {:ecto_sql, "~> 3.12", only: :test},
       {:ecto_sqlite3, "~> 0.17", only: :test},
+      {:postgrex, "~> 0.19", only: :test},
       {:mox, "~> 1.2", only: :test},
       {:excoveralls, "~> 0.18", only: :test},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false},

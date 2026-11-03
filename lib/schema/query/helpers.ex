@@ -13,6 +13,9 @@ defmodule BoxTurtle.Schema.Query.Helpers do
 
   @option_keys ~w(aggregate distinct filters group_by page preloads sort)a
 
+  # Adapters that can't generate DISTINCT ON; they raise Ecto.QueryError when such a query runs.
+  @no_distinct_on [Ecto.Adapters.SQLite3, Ecto.Adapters.MyXQL, Ecto.Adapters.Tds]
+
   ###
   # Options handlers
   ###
@@ -58,7 +61,15 @@ defmodule BoxTurtle.Schema.Query.Helpers do
 
   @doc "The `:group_by` columns."
   @spec grouping(keyword()) :: list()
-  def grouping(opts), do: opts |> get_opt(:group_by, [], []) |> List.wrap()
+  def grouping(opts) do
+    opts
+    |> get_opt(:group_by, [], [])
+    |> List.wrap()
+    |> Enum.map(fn
+      column when is_binary(column) -> String.to_existing_atom(column)
+      column -> column
+    end)
+  end
 
   @doc "True when the `ignore_defaults: true` option is set."
   @spec ignore_defaults?(keyword()) :: boolean()
@@ -259,6 +270,28 @@ defmodule BoxTurtle.Schema.Query.Helpers do
 
   defp join_assoc(query, parent, assoc, name),
     do: join(query, :left, [{^parent, p}], a in assoc(p, ^assoc), as: ^name)
+
+  @doc """
+  Returns the `:distinct` `columns` unchanged if `repo`'s adapter supports `DISTINCT ON`, and raises
+  `ArgumentError` if it is known not to (SQLite3, MyXQL, Tds). The adapter would otherwise only fail
+  once the query runs.
+
+  Counts are not affected: `count(distinct: ...)` uses `COUNT(DISTINCT column)`, which every adapter supports.
+  """
+  @spec distinct_on!(list(), module()) :: list()
+  def distinct_on!([], _repo), do: []
+
+  def distinct_on!(columns, repo) do
+    adapter = repo.__adapter__()
+
+    if adapter in @no_distinct_on do
+      raise ArgumentError,
+            "distinct: #{inspect(columns)} needs DISTINCT ON, which #{inspect(repo)}'s adapter " <>
+              "(#{inspect(adapter)}) does not support. With this adapter only counts can use :distinct."
+    end
+
+    columns
+  end
 
   @doc "Adds a `distinct` clause."
   @spec unique(Ecto.Queryable.t(), nil | atom() | list()) :: Ecto.Queryable.t()

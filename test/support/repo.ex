@@ -2,6 +2,11 @@ defmodule BoxTurtle.Test.Repo do
   use Ecto.Repo, otp_app: :box_turtle, adapter: Ecto.Adapters.SQLite3
 end
 
+# Only started when BOX_TURTLE_PG_URL is set; covers PostgreSQL-only features such as DISTINCT ON.
+defmodule BoxTurtle.Test.PgRepo do
+  use Ecto.Repo, otp_app: :box_turtle, adapter: Ecto.Adapters.Postgres
+end
+
 defmodule BoxTurtle.Test.Migration do
   use Ecto.Migration
 
@@ -25,6 +30,12 @@ defmodule BoxTurtle.Test.Migration do
     create table(:tags, primary_key: false) do
       add(:id, :string, primary_key: true)
       add(:name, :string, null: false)
+    end
+
+    # A primary key not named :id.
+    create table(:codes, primary_key: false) do
+      add(:code, :string, primary_key: true)
+      add(:label, :string)
     end
   end
 end
